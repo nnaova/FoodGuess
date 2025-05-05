@@ -12,8 +12,7 @@ class Player {
     required this.name,
     List<String>? betItemIds,
     this.score = 0,
-  }) : betItemIds =
-           betItemIds != null ? List<String>.from(betItemIds) : [];
+  }) : betItemIds = betItemIds != null ? List<String>.from(betItemIds) : [];
 
   // Ajouter un pari pour le joueur
   void addBet(String betItemId) {
@@ -42,6 +41,21 @@ class Player {
       name: name ?? this.name,
       betItemIds: betItemIds ?? List.from(this.betItemIds),
       score: score ?? this.score,
+    );
+  }
+
+  // Conversion en Map pour le stockage JSON
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'name': name, 'betItemIds': betItemIds, 'score': score};
+  }
+
+  // Création d'une instance à partir de données JSON
+  factory Player.fromJson(Map<String, dynamic> json) {
+    return Player(
+      id: json['id'],
+      name: json['name'],
+      betItemIds: (json['betItemIds'] as List<dynamic>).cast<String>(),
+      score: json['score'],
     );
   }
 }

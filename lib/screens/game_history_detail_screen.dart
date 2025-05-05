@@ -1,0 +1,324 @@
+import 'package:flutter/material.dart';
+import '../models/game_history_entry.dart';
+import '../models/player.dart';
+import '../models/bet_item.dart';
+
+class GameHistoryDetailScreen extends StatelessWidget {
+  final GameHistoryEntry entry;
+
+  const GameHistoryDetailScreen({super.key, required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    // Trier les joueurs par score décroissant
+    final List<Player> sortedPlayers = List.from(entry.players)
+      ..sort((a, b) => b.score.compareTo(a.score));
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Détails de la partie'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // En-tête avec infos de la partie
+            _buildGameHeader(context),
+
+            // Liste des joueurs et leurs scores
+            _buildPlayersSection(context, sortedPlayers),
+
+            // Éléments qui rapportaient des points
+            _buildScoringItemsSection(context),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGameHeader(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.primary.withOpacity(0.7),
+          ],
+        ),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.emoji_events, size: 60, color: Colors.amber),
+          const SizedBox(height: 10),
+          Text(
+            'Partie du ${entry.formattedDate}',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.star, color: Colors.white),
+                const SizedBox(width: 5),
+                Text(
+                  'Gagnant: ${entry.winnerName}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${entry.players.length} joueurs · ${entry.scoringItems.length} éléments gagnants',
+            style: const TextStyle(color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlayersSection(BuildContext context, List<Player> players) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+          child: Row(
+            children: [
+              Icon(Icons.people, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Classement des joueurs',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ],
+          ),
+        ),
+        const Divider(),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: players.length,
+          itemBuilder: (context, index) {
+            final player = players[index];
+            final isWinner = index == 0;
+            final isTie = index > 0 && players[index - 1].score == player.score;
+
+            return _buildPlayerRow(context, player, index + 1, isWinner, isTie);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPlayerRow(
+    BuildContext context,
+    Player player,
+    int position,
+    bool isWinner,
+    bool isTie,
+  ) {
+    return ExpansionTile(
+      leading: CircleAvatar(
+        backgroundColor: isWinner ? Colors.amber : Colors.grey[300],
+        child: Text(
+          '$position',
+          style: TextStyle(
+            color: isWinner ? Colors.white : Colors.black87,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      title: Text(
+        player.name,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: isWinner ? Colors.amber[900] : null,
+        ),
+      ),
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color:
+              isWinner
+                  ? Colors.amber.withOpacity(0.2)
+                  : Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          '${player.score} pts',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color:
+                isWinner
+                    ? Colors.amber[900]
+                    : Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ),
+      children: [
+        if (player.betItemIds.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Éléments choisis:',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children:
+                      player.betItemIds.map((itemId) {
+                        final item = _findBetItem(itemId);
+                        final isScoring = item?.isScoring ?? false;
+
+                        return Chip(
+                          backgroundColor:
+                              isScoring ? Colors.green[100] : Colors.grey[100],
+                          label: Text(
+                            item?.name ?? 'Élément inconnu',
+                            style: TextStyle(
+                              color:
+                                  isScoring
+                                      ? Colors.green[800]
+                                      : Colors.grey[800],
+                              fontWeight: isScoring ? FontWeight.w500 : null,
+                            ),
+                          ),
+                          avatar:
+                              isScoring
+                                  ? const Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                  )
+                                  : const Icon(Icons.cancel, color: Colors.red),
+                        );
+                      }).toList(),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildScoringItemsSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            children: [
+              Icon(
+                Icons.fastfood,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Éléments gagnants',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ],
+          ),
+        ),
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child:
+              entry.scoringItems.isEmpty
+                  ? const Center(
+                    child: Text(
+                      'Aucun élément gagnant pour cette partie',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                  : Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children:
+                        entry.scoringItems.map((item) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green[100],
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  item.name,
+                                  style: TextStyle(
+                                    color: Colors.green[800],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                  ),
+        ),
+      ],
+    );
+  }
+
+  // Recherche un élément par son ID
+  BetItem? _findBetItem(String itemId) {
+    try {
+      return entry.scoringItems.firstWhere((item) => item.id == itemId);
+    } catch (e) {
+      // Si l'élément n'est pas dans les éléments gagnants, chercher dans tous les éléments
+      for (final player in entry.players) {
+        for (final betItemId in player.betItemIds) {
+          if (betItemId == itemId) {
+            // Créer un élément avec les informations disponibles
+            // Remarque: ici on ne peut pas connaître le nom réel de l'élément
+            // car on n'a pas accès à la liste complète
+            return BetItem(
+              id: itemId,
+              name: 'Élément #$itemId',
+              isScoring: false,
+            );
+          }
+        }
+      }
+      return null;
+    }
+  }
+}

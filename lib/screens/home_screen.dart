@@ -30,12 +30,6 @@ class HomeScreen extends StatelessWidget {
               // Section principale avec les cartes de jeu
               _buildGameCards(context),
 
-              // Section statistiques du joueur
-              _buildPlayerStats(context),
-
-              // Section dernières activités
-              _buildRecentActivity(context),
-
               const SizedBox(height: 30),
             ],
           ),
@@ -131,7 +125,7 @@ class HomeScreen extends StatelessWidget {
           _buildPlayCard(
             context,
             title: 'Nouvelle partie',
-            subtitle: 'Crée une session et invite tes amis',
+            subtitle: 'Crée une session et joue avec tes amis',
             icon: Icons.add_circle_outline_rounded,
             color: Theme.of(context).colorScheme.primary,
             action: () => Navigator.pushNamed(context, '/game-setup'),
@@ -140,7 +134,7 @@ class HomeScreen extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Deux cartes côte à côte
+          // Deux cartes côte à côte (au lieu de trois)
           Row(
             children: [
               // Carte pour gérer les éléments
@@ -155,257 +149,21 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              // Carte pour rejoindre une partie
+              // Carte pour voir l'historique des parties
               Expanded(
                 child: _buildPlayCard(
                   context,
-                  title: 'Rejoindre',
-                  subtitle: 'Par code invitation',
-                  icon: Icons.group_add_rounded,
-                  color: Theme.of(context).colorScheme.secondary,
-                  action: () {},
+                  title: 'Historique',
+                  subtitle: 'Parties passées',
+                  icon: Icons.history,
+                  color: Colors.teal,
+                  action: () => Navigator.pushNamed(context, '/game-history'),
                 ),
               ),
             ],
           ),
         ],
       ),
-    );
-  }
-
-  // Section de statistiques du joueur
-  Widget _buildPlayerStats(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 45,
-                height: 45,
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.secondary.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.emoji_events_rounded,
-                  color: Theme.of(context).colorScheme.secondary,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Tes statistiques 🔥',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem(
-                context,
-                '12',
-                'Parties jouées',
-                Icons.sports_esports_rounded,
-              ),
-              _buildStatItem(
-                context,
-                '3',
-                'Victoires',
-                Icons.workspace_premium_rounded,
-              ),
-              _buildStatItem(
-                context,
-                '78%',
-                'Précision',
-                Icons.auto_graph_rounded,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Section d'activité récente
-  Widget _buildRecentActivity(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.campaign_rounded,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Activités récentes',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildActivityItem(
-            context,
-            icon: Icons.star_rounded,
-            color: Theme.of(context).colorScheme.secondary,
-            title: 'Bravo !',
-            message: 'Tu as gagné une partie avec 7 prédictions correctes !',
-            time: '1h',
-          ),
-          const Divider(height: 30),
-          _buildActivityItem(
-            context,
-            icon: Icons.notifications_active_rounded,
-            color: Theme.of(context).colorScheme.primary,
-            title: 'Nouvelle collecte',
-            message: '3 nouveaux aliments disponibles près de ton campus',
-            time: '3h',
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Élément d'activité
-  Widget _buildActivityItem(
-    BuildContext context, {
-    required IconData icon,
-    required Color color,
-    required String title,
-    required String message,
-    required String time,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  Text(
-                    'Il y a $time',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 3),
-              Text(
-                message,
-                style: TextStyle(
-                  color: Colors.grey[700],
-                  height: 1.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Élément de statistique
-  Widget _buildStatItem(
-    BuildContext context,
-    String value,
-    String label,
-    IconData icon,
-  ) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: Theme.of(context).colorScheme.primary,
-            size: 26,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
-      ],
     );
   }
 

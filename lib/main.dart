@@ -8,6 +8,7 @@ import 'screens/game_setup_screen.dart';
 import 'screens/game_play_screen.dart';
 import 'screens/game_scoring_screen.dart';
 import 'screens/game_results_screen.dart';
+import 'screens/game_history_screen.dart';
 
 // Nouvelles couleurs de la charte graphique FoodGuess
 class AppColors {
@@ -120,6 +121,7 @@ class _MyAppState extends State<MyApp> {
       routes: {
         '/': (context) => const HomeScreen(),
         '/bet-items': (context) => const BetItemsScreen(),
+        '/game-history': (context) => const GameHistoryScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/game-setup') {

@@ -2,16 +2,40 @@ import 'package:flutter/material.dart';
 import '../models/game.dart';
 import '../models/player.dart';
 import '../models/bet_item.dart';
+import '../services/game_history_storage.dart';
 
-class GameResultsScreen extends StatelessWidget {
+class GameResultsScreen extends StatefulWidget {
   final Game game;
 
   const GameResultsScreen({super.key, required this.game});
 
   @override
+  State<GameResultsScreen> createState() => _GameResultsScreenState();
+}
+
+class _GameResultsScreenState extends State<GameResultsScreen> {
+  final GameHistoryStorage _historyStorage = GameHistoryStorage();
+  bool _historySaved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _saveToHistory();
+  }
+
+  Future<void> _saveToHistory() async {
+    if (!_historySaved) {
+      await _historyStorage.saveGameToHistory(widget.game);
+      setState(() {
+        _historySaved = true;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Trier les joueurs par score décroissant
-    final List<Player> sortedPlayers = List.from(game.players)
+    final List<Player> sortedPlayers = List.from(widget.game.players)
       ..sort((a, b) => b.score.compareTo(a.score));
 
     return Scaffold(
@@ -53,7 +77,7 @@ class GameResultsScreen extends StatelessWidget {
                         'Éléments qui rapportaient des points:',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onBackground,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -61,13 +85,19 @@ class GameResultsScreen extends StatelessWidget {
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          for (final item in game.scoringItems)
+                          for (final item in widget.game.scoringItems)
                             Chip(
-                              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                              backgroundColor:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
                               label: Text(
                                 item.name,
                                 style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimaryContainer,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -91,17 +121,26 @@ class GameResultsScreen extends StatelessWidget {
         children: [
           FloatingActionButton.extended(
             onPressed: () {
-              game.resetGame();
+              widget.game.resetGame();
               Navigator.pushReplacementNamed(
                 context,
                 '/game-play',
-                arguments: game,
+                arguments: widget.game,
               );
             },
             heroTag: 'new_game_same_players',
             label: const Text('Rejouer'),
             icon: const Icon(Icons.replay),
             backgroundColor: Theme.of(context).colorScheme.secondary,
+            foregroundColor: Colors.white,
+          ),
+          const SizedBox(height: 10),
+          FloatingActionButton.extended(
+            onPressed: () => Navigator.pushNamed(context, '/game-history'),
+            heroTag: 'view_history',
+            label: const Text('Voir l\'historique'),
+            icon: const Icon(Icons.history),
+            backgroundColor: Colors.teal,
             foregroundColor: Colors.white,
           ),
           const SizedBox(height: 10),
@@ -120,7 +159,8 @@ class GameResultsScreen extends StatelessWidget {
   }
 
   Widget _buildWinnerCard(Player winner, BuildContext context) {
-    final Color winnerBackgroundColor = Colors.amber[100] ?? Colors.amber.shade100;
+    final Color winnerBackgroundColor =
+        Colors.amber[100] ?? Colors.amber.shade100;
     final Color winnerTextColor = Colors.amber[900] ?? Colors.amber.shade900;
 
     return Card(
@@ -182,16 +222,17 @@ class GameResultsScreen extends StatelessWidget {
   ) {
     // Trouver les éléments sur lesquels ce joueur a parié
     final List<BetItem> playerBetItems =
-        game.availableBetItems
+        widget.game.availableBetItems
             .where((item) => player.betItemIds.contains(item.id))
             .toList();
 
-    final isTie = index > 0 && game.players[index - 1].score == player.score;
-    
+    final isTie =
+        index > 0 && widget.game.players[index - 1].score == player.score;
+
     // Détermination des couleurs de fond et de texte pour meilleure lisibilité
     Color? cardBackgroundColor;
     Color titleTextColor = Colors.black87; // Couleur par défaut du texte titre
-    
+
     if (index == 0) {
       cardBackgroundColor = Colors.amber[100];
       titleTextColor = Colors.amber[900] ?? Colors.amber.shade900;
@@ -217,10 +258,7 @@ class GameResultsScreen extends StatelessWidget {
         ),
         title: Text(
           player.name,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: titleTextColor,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: titleTextColor),
         ),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -256,21 +294,27 @@ class GameResultsScreen extends StatelessWidget {
                   children: [
                     for (final item in playerBetItems)
                       Chip(
-                        backgroundColor: item.isScoring 
-                            ? Colors.green[100] 
-                            : Colors.grey[100],
+                        backgroundColor:
+                            item.isScoring
+                                ? Colors.green[100]
+                                : Colors.grey[100],
                         label: Text(
                           item.name,
                           style: TextStyle(
-                            color: item.isScoring 
-                                ? Colors.green[800] 
-                                : Colors.grey[800],
+                            color:
+                                item.isScoring
+                                    ? Colors.green[800]
+                                    : Colors.grey[800],
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        avatar: item.isScoring
-                            ? const Icon(Icons.check_circle, color: Colors.green)
-                            : const Icon(Icons.cancel, color: Colors.red),
+                        avatar:
+                            item.isScoring
+                                ? const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                )
+                                : const Icon(Icons.cancel, color: Colors.red),
                       ),
                   ],
                 ),
