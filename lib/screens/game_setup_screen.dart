@@ -33,9 +33,9 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
     setState(() {
       _isLoading = true;
     });
-    
+
     final players = await _playerStorage.loadPlayers();
-    
+
     setState(() {
       _availablePlayers = players;
       _isLoading = false;
@@ -76,12 +76,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
 
     setState(() {
       // Créer une nouvelle instance du joueur pour cette partie
-      _players.add(
-        Player(
-          id: player.id,
-          name: player.name,
-        ),
-      );
+      _players.add(Player(id: player.id, name: player.name));
     });
   }
 
@@ -148,116 +143,126 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // Section de sélection des joueurs existants
-                if (_availablePlayers.isNotEmpty)
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                children: [
+                  // Section de sélection des joueurs existants
+                  if (_availablePlayers.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Card(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text(
+                                'Joueurs disponibles',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                            ),
+                            SizedBox(
+                              height: 100,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _availablePlayers.length,
+                                itemBuilder: (ctx, index) {
+                                  final player = _availablePlayers[index];
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8.0,
+                                    ),
+                                    child: InkWell(
+                                      onTap: () => _addExistingPlayer(player),
+                                      child: Column(
+                                        children: [
+                                          CircleAvatar(
+                                            child: Text(
+                                              player.name[0].toUpperCase(),
+                                            ),
+                                            radius: 24,
+                                          ),
+                                          const SizedBox(height: 5),
+                                          Text(player.name),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  // Section d'ajout manuel de joueur
                   Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Card(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Form(
+                      key: _formKey,
+                      child: Row(
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                              'Joueurs disponibles',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                          ),
-                          SizedBox(
-                            height: 100,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: _availablePlayers.length,
-                              itemBuilder: (ctx, index) {
-                                final player = _availablePlayers[index];
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                  child: InkWell(
-                                    onTap: () => _addExistingPlayer(player),
-                                    child: Column(
-                                      children: [
-                                        CircleAvatar(
-                                          child: Text(player.name[0].toUpperCase()),
-                                          radius: 24,
-                                        ),
-                                        const SizedBox(height: 5),
-                                        Text(player.name),
-                                      ],
-                                    ),
-                                  ),
-                                );
+                          Expanded(
+                            child: TextFormField(
+                              controller: _playerNameController,
+                              decoration: const InputDecoration(
+                                labelText: 'Nouveau joueur',
+                                border: OutlineInputBorder(),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Veuillez entrer un nom de joueur';
+                                }
+                                return null;
                               },
                             ),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton.icon(
+                            onPressed: _addPlayer,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Ajouter'),
                           ),
                         ],
                       ),
                     ),
                   ),
-                // Section d'ajout manuel de joueur
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _playerNameController,
-                            decoration: const InputDecoration(
-                              labelText: 'Nouveau joueur',
-                              border: OutlineInputBorder(),
+                  const Divider(),
+                  // Liste des joueurs de la partie
+                  Expanded(
+                    child:
+                        _players.isEmpty
+                            ? const Center(
+                              child: Text(
+                                'Aucun joueur ajouté.\nAjoutez des joueurs pour commencer une partie.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 18),
+                              ),
+                            )
+                            : ListView.builder(
+                              itemCount: _players.length,
+                              itemBuilder: (ctx, index) {
+                                final player = _players[index];
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    child: Text('${index + 1}'),
+                                  ),
+                                  title: Text(player.name),
+                                  trailing: IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () => _removePlayer(index),
+                                  ),
+                                );
+                              },
                             ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Veuillez entrer un nom de joueur';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton.icon(
-                          onPressed: _addPlayer,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Ajouter'),
-                        ),
-                      ],
-                    ),
                   ),
-                ),
-                const Divider(),
-                // Liste des joueurs de la partie
-                Expanded(
-                  child:
-                      _players.isEmpty
-                          ? const Center(
-                            child: Text(
-                              'Aucun joueur ajouté.\nAjoutez des joueurs pour commencer une partie.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 18),
-                            ),
-                          )
-                          : ListView.builder(
-                            itemCount: _players.length,
-                            itemBuilder: (ctx, index) {
-                              final player = _players[index];
-                              return ListTile(
-                                leading: CircleAvatar(child: Text('${index + 1}')),
-                                title: Text(player.name),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () => _removePlayer(index),
-                                ),
-                              );
-                            },
-                          ),
-                ),
-              ],
-            ),
+                ],
+              ),
       floatingActionButton:
           _players.length >= 2
               ? FloatingActionButton.extended(

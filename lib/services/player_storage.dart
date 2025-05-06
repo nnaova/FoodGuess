@@ -9,7 +9,9 @@ class PlayerStorage {
   // Sauvegarder la liste des joueurs
   Future<void> savePlayers(List<Player> players) async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonString = jsonEncode(players.map((player) => player.toJson()).toList());
+    final jsonString = jsonEncode(
+      players.map((player) => player.toJson()).toList(),
+    );
     await prefs.setString(_storageKey, jsonString);
   }
 

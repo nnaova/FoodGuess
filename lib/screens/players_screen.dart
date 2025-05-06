@@ -48,10 +48,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _players.add(
-          Player(
-            id: const Uuid().v4(),
-            name: _nameController.text.trim(),
-          ),
+          Player(id: const Uuid().v4(), name: _nameController.text.trim()),
         );
       });
       _savePlayers(); // Sauvegarder après ajout
@@ -92,45 +89,46 @@ class _PlayersScreenState extends State<PlayersScreen> {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          player == null ? 'Ajouter un joueur' : 'Modifier le joueur',
-        ),
-        content: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Nom'),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Veuillez entrer un nom';
+      builder:
+          (ctx) => AlertDialog(
+            title: Text(
+              player == null ? 'Ajouter un joueur' : 'Modifier le joueur',
+            ),
+            content: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(labelText: 'Nom'),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Veuillez entrer un nom';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Annuler'),
+              ),
+              TextButton(
+                onPressed: () {
+                  if (player == null) {
+                    _addPlayer();
+                  } else {
+                    _editPlayer(player, index!);
                   }
-                  return null;
                 },
+                child: Text(player == null ? 'Ajouter' : 'Modifier'),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (player == null) {
-                _addPlayer();
-              } else {
-                _editPlayer(player, index!);
-              }
-            },
-            child: Text(player == null ? 'Ajouter' : 'Modifier'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -142,42 +140,44 @@ class _PlayersScreenState extends State<PlayersScreen> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _players.isEmpty
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _players.isEmpty
               ? const Center(
-                  child: Text(
-                    'Aucun joueur enregistré.\nAjoutez des joueurs en appuyant sur +',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 18),
-                  ),
-                )
-              : ListView.builder(
-                  itemCount: _players.length,
-                  itemBuilder: (ctx, index) {
-                    final player = _players[index];
-                    return ListTile(
-                      leading: CircleAvatar(child: Text('${index + 1}')),
-                      title: Text(player.name),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit),
-                            onPressed: () => _showAddEditDialog(
-                              player: player,
-                              index: index,
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _deletePlayer(index),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                child: Text(
+                  'Aucun joueur enregistré.\nAjoutez des joueurs en appuyant sur +',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18),
                 ),
+              )
+              : ListView.builder(
+                itemCount: _players.length,
+                itemBuilder: (ctx, index) {
+                  final player = _players[index];
+                  return ListTile(
+                    leading: CircleAvatar(child: Text('${index + 1}')),
+                    title: Text(player.name),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed:
+                              () => _showAddEditDialog(
+                                player: player,
+                                index: index,
+                              ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _deletePlayer(index),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEditDialog(),
         backgroundColor: Theme.of(context).colorScheme.primary,
