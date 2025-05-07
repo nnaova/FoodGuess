@@ -13,9 +13,13 @@ class BetItemsScreen extends StatefulWidget {
 class _BetItemsScreenState extends State<BetItemsScreen> {
   // Liste des éléments pariables
   List<BetItem> _betItems = [];
+  List<BetItem> _filteredBetItems =
+      []; // Nouvelle liste pour les résultats filtrés
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _searchController =
+      TextEditingController(); // Contrôleur pour la recherche
   final BetItemStorage _storage = BetItemStorage();
   bool _isLoading = true;
 
@@ -23,6 +27,26 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
   void initState() {
     super.initState();
     _loadBetItems();
+
+    // Écouter les changements dans le champ de recherche
+    _searchController.addListener(_filterBetItems);
+  }
+
+  // Filtrer les éléments en fonction du texte de recherche
+  void _filterBetItems() {
+    final query = _searchController.text.toLowerCase();
+
+    setState(() {
+      if (query.isEmpty) {
+        _filteredBetItems = List.from(_betItems);
+      } else {
+        _filteredBetItems =
+            _betItems.where((item) {
+              return item.name.toLowerCase().contains(query) ||
+                  item.description.toLowerCase().contains(query);
+            }).toList();
+      }
+    });
   }
 
   // Charger les éléments pariables depuis le stockage
@@ -30,6 +54,7 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
     final items = await _storage.loadBetItems();
     setState(() {
       _betItems = items;
+      _filteredBetItems = List.from(items); // Initialiser la liste filtrée
       _isLoading = false;
     });
   }
@@ -43,6 +68,7 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _searchController.dispose(); // Libérer le contrôleur de recherche
     super.dispose();
   }
 
@@ -56,6 +82,7 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
             description: _descriptionController.text.trim(),
           ),
         );
+        _filterBetItems(); // Mettre à jour la liste filtrée
       });
       _saveBetItems(); // Sauvegarder après ajout
       _nameController.clear();
@@ -72,6 +99,7 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim(),
         );
+        _filterBetItems(); // Mettre à jour la liste filtrée
       });
       _saveBetItems(); // Sauvegarder après modification
       _nameController.clear();
@@ -83,6 +111,7 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
   void _deleteBetItem(int index) {
     setState(() {
       _betItems.removeAt(index);
+      _filterBetItems(); // Mettre à jour la liste filtrée
     });
     _saveBetItems(); // Sauvegarder après suppression
   }
@@ -115,21 +144,23 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
                       if (value == null || value.trim().isEmpty) {
                         return 'Veuillez entrer un nom';
                       }
-                      
+
                       // Vérifier s'il existe déjà un aliment avec ce nom
                       final trimmedValue = value.trim();
                       final isEditing = item != null;
-                      
+
                       // Lors de la modification, on ne vérifie pas le nom actuel de l'élément
-                      bool alreadyExists = _betItems.any((betItem) => 
-                        betItem.name.toLowerCase() == trimmedValue.toLowerCase() && 
-                        (!isEditing || betItem.id != item.id)
+                      bool alreadyExists = _betItems.any(
+                        (betItem) =>
+                            betItem.name.toLowerCase() ==
+                                trimmedValue.toLowerCase() &&
+                            (!isEditing || betItem.id != item.id),
                       );
-                      
+
                       if (alreadyExists) {
                         return 'Un aliment avec ce nom existe déjà';
                       }
-                      
+
                       return null;
                     },
                   ),
@@ -173,49 +204,73 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
-              : _betItems.isEmpty
-              ? const Center(
-                child: Text(
-                  'Aucun élément pariable ajouté.\nAppuyez sur le bouton + pour en ajouter.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 18),
-                ),
-              )
-              : ListView.builder(
-                itemCount: _betItems.length,
-                itemBuilder: (ctx, index) {
-                  final item = _betItems[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 15,
-                      vertical: 8,
-                    ),
-                    child: ListTile(
-                      title: Text(item.name),
-                      subtitle:
-                          item.description.isNotEmpty
-                              ? Text(item.description)
-                              : null,
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit),
-                            onPressed:
-                                () => _showAddEditDialog(
-                                  item: item,
-                                  index: index,
-                                ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _deleteBetItem(index),
-                          ),
-                        ],
+              : Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: const InputDecoration(
+                        labelText: 'Rechercher',
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(),
                       ),
                     ),
-                  );
-                },
+                  ),
+                  Expanded(
+                    child:
+                        _filteredBetItems.isEmpty
+                            ? const Center(
+                              child: Text(
+                                'Aucun élément pariable trouvé.\nEssayez une autre recherche.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 18),
+                              ),
+                            )
+                            : ListView.builder(
+                              itemCount: _filteredBetItems.length,
+                              itemBuilder: (ctx, index) {
+                                final item = _filteredBetItems[index];
+                                return Card(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 15,
+                                    vertical: 8,
+                                  ),
+                                  child: ListTile(
+                                    title: Text(item.name),
+                                    subtitle:
+                                        item.description.isNotEmpty
+                                            ? Text(item.description)
+                                            : null,
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.edit),
+                                          onPressed:
+                                              () => _showAddEditDialog(
+                                                item: item,
+                                                index: _betItems.indexOf(item),
+                                              ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed:
+                                              () => _deleteBetItem(
+                                                _betItems.indexOf(item),
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                  ),
+                ],
               ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEditDialog(),

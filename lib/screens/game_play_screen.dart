@@ -13,17 +13,49 @@ class GamePlayScreen extends StatefulWidget {
 
 class _GamePlayScreenState extends State<GamePlayScreen> {
   late Game _game;
+  final TextEditingController _searchController = TextEditingController();
+  List<BetItem> _filteredItems = [];
 
   @override
   void initState() {
     super.initState();
     _game = widget.game;
     _game.startGame();
+    _filteredItems = List.from(_game.availableItems);
+
+    // Écouter les changements dans le champ de recherche
+    _searchController.addListener(_filterItems);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // Filtrer les aliments en fonction du texte de recherche
+  void _filterItems() {
+    final query = _searchController.text.toLowerCase();
+
+    setState(() {
+      if (query.isEmpty) {
+        _filteredItems = List.from(_game.availableItems);
+      } else {
+        _filteredItems =
+            _game.availableItems.where((item) {
+              return item.name.toLowerCase().contains(query) ||
+                  item.description.toLowerCase().contains(query);
+            }).toList();
+      }
+    });
   }
 
   void _placeBet(String betItemId) {
     setState(() {
       _game.placeBet(betItemId);
+
+      // Mettre à jour les éléments filtrés après avoir placé un pari
+      _filterItems();
 
       // Si la partie est terminée, passer à l'écran de scoring
       if (_game.state == GameState.scoring) {
@@ -84,10 +116,22 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
             ),
           ),
 
+          // Barre de recherche
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                labelText: 'Rechercher un élément',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+
           // Éléments disponibles pour parier
           Expanded(
             child:
-                _game.availableItems.isEmpty
+                _filteredItems.isEmpty
                     ? const Center(
                       child: Text(
                         'Plus d\'éléments disponibles à choisir.\nTerminez la partie.',
@@ -104,9 +148,9 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
                             mainAxisSpacing: 10,
                             childAspectRatio: 3 / 2,
                           ),
-                      itemCount: _game.availableItems.length,
+                      itemCount: _filteredItems.length,
                       itemBuilder: (ctx, index) {
-                        final item = _game.availableItems[index];
+                        final item = _filteredItems[index];
                         return _buildBetItemCard(item);
                       },
                     ),
