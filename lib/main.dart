@@ -13,7 +13,7 @@ import 'screens/game_history_screen.dart';
 import 'screens/game_history_detail_screen.dart'; // Nouvel import
 import 'screens/players_screen.dart';
 import 'screens/player_comparison_screen.dart';
-import 'screens/player_stats_screen.dart'; // Nouvel import
+// Nouvel import
 
 // Nouvelles couleurs de la charte graphique FoodGuess
 class AppColors {
