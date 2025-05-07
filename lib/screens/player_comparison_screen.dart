@@ -450,11 +450,6 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
                   '${_playerBWinPercentage.toStringAsFixed(1)}%',
                 ),
                 _buildStatRow(
-                  'Pourcentage d\'égalités',
-                  '${_tiePercentage.toStringAsFixed(1)}%',
-                  '-',
-                ),
-                _buildStatRow(
                   'Moyenne de points par partie',
                   '${_playerAAvgScore.toStringAsFixed(2)} pts',
                   '${_playerBAvgScore.toStringAsFixed(2)} pts',

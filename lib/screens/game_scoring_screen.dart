@@ -95,10 +95,23 @@ class _GameScoringScreenState extends State<GameScoringScreen> {
                               fontWeight: FontWeight.bold,
                               color:
                                   isSelected
-                                      ? Theme.of(context).colorScheme.primary
+                                      ? Colors
+                                          .white // Couleur blanche pour un meilleur contraste
                                       : null,
                             ),
                             textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            "${item.points} pt${item.points > 1 ? 's' : ''}",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isSelected
+                                      ? Colors.green[700]
+                                      : Colors.grey[600],
+                            ),
                           ),
                           if (item.description.isNotEmpty)
                             Padding(

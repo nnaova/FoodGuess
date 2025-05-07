@@ -20,6 +20,8 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _searchController =
       TextEditingController(); // Contrôleur pour la recherche
+  final TextEditingController _pointsController =
+      TextEditingController(); // Contrôleur pour les points
   final BetItemStorage _storage = BetItemStorage();
   bool _isLoading = true;
 
@@ -69,6 +71,7 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
     _nameController.dispose();
     _descriptionController.dispose();
     _searchController.dispose(); // Libérer le contrôleur de recherche
+    _pointsController.dispose(); // Libérer le contrôleur des points
     super.dispose();
   }
 
@@ -80,6 +83,9 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
             id: const Uuid().v4(),
             name: _nameController.text.trim(),
             description: _descriptionController.text.trim(),
+            points:
+                int.tryParse(_pointsController.text) ??
+                1, // Utiliser la valeur des points
           ),
         );
         _filterBetItems(); // Mettre à jour la liste filtrée
@@ -87,6 +93,7 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
       _saveBetItems(); // Sauvegarder après ajout
       _nameController.clear();
       _descriptionController.clear();
+      _pointsController.clear(); // Effacer le contrôleur des points
       Navigator.pop(context);
     }
   }
@@ -98,12 +105,17 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
           id: item.id,
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim(),
+          isScoring: item.isScoring,
+          points:
+              int.tryParse(_pointsController.text) ??
+              1, // Utiliser la valeur des points
         );
         _filterBetItems(); // Mettre à jour la liste filtrée
       });
       _saveBetItems(); // Sauvegarder après modification
       _nameController.clear();
       _descriptionController.clear();
+      _pointsController.clear(); // Effacer le contrôleur des points
       Navigator.pop(context);
     }
   }
@@ -120,9 +132,11 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
     if (item != null) {
       _nameController.text = item.name;
       _descriptionController.text = item.description;
+      _pointsController.text = item.points.toString(); // Initialiser les points
     } else {
       _nameController.clear();
       _descriptionController.clear();
+      _pointsController.clear(); // Effacer les points
     }
 
     showDialog(
@@ -169,6 +183,21 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Description (optionnelle)',
                     ),
+                  ),
+                  TextFormField(
+                    controller: _pointsController,
+                    decoration: const InputDecoration(labelText: 'Points'),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Veuillez entrer un nombre de points';
+                      }
+                      final points = int.tryParse(value.trim());
+                      if (points == null || points <= 0) {
+                        return 'Veuillez entrer un nombre valide supérieur à 0';
+                      }
+                      return null;
+                    },
                   ),
                 ],
               ),
@@ -238,10 +267,15 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
                                   ),
                                   child: ListTile(
                                     title: Text(item.name),
-                                    subtitle:
-                                        item.description.isNotEmpty
-                                            ? Text(item.description)
-                                            : null,
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        if (item.description.isNotEmpty)
+                                          Text(item.description),
+                                        Text('Points: ${item.points}'),
+                                      ],
+                                    ),
                                     trailing: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [

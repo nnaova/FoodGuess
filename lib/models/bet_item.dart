@@ -4,12 +4,14 @@ class BetItem {
   final String description;
   bool isScoring =
       false; // Indique si l'élément rapporte des points à la fin de la partie
+  int points = 1; // Nombre de points que vaut cet élément (par défaut: 1)
 
   BetItem({
     required this.id,
     required this.name,
     this.description = '',
     this.isScoring = false,
+    this.points = 1, // Valeur par défaut: 1 point
   });
 
   // Copie avec modification
@@ -18,12 +20,14 @@ class BetItem {
     String? name,
     String? description,
     bool? isScoring,
+    int? points,
   }) {
     return BetItem(
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
       isScoring: isScoring ?? this.isScoring,
+      points: points ?? this.points,
     );
   }
 
@@ -34,16 +38,18 @@ class BetItem {
       'name': name,
       'description': description,
       'isScoring': isScoring,
+      'points': points,
     };
   }
 
   // Création d'une instance à partir de données JSON
   factory BetItem.fromJson(Map<String, dynamic> json) {
     return BetItem(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String? ?? '',
-      isScoring: json['isScoring'] as bool? ?? false,
+      id: json['id'],
+      name: json['name'],
+      description: json['description'] ?? '',
+      isScoring: json['isScoring'] ?? false,
+      points: json['points'] ?? 1, // Valeur par défaut si non spécifié: 1 point
     );
   }
 }
