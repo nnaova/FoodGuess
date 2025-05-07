@@ -50,6 +50,7 @@ class GameHistoryDetailScreen extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             Theme.of(context).colorScheme.primary,
+            // ignore: deprecated_member_use
             Theme.of(context).colorScheme.primary.withOpacity(0.7),
           ],
         ),
@@ -70,6 +71,7 @@ class GameHistoryDetailScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
+              // ignore: deprecated_member_use
               color: Colors.amber.withOpacity(0.8),
               borderRadius: BorderRadius.circular(20),
             ),
@@ -79,7 +81,9 @@ class GameHistoryDetailScreen extends StatelessWidget {
                 const Icon(Icons.star, color: Colors.white),
                 const SizedBox(width: 5),
                 Text(
-                  'Gagnant: ${entry.winnerName}',
+                  entry.isTie
+                      ? 'Égalité: ${entry.winnerName}'
+                      : 'Gagnant: ${entry.winnerName}',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -122,10 +126,28 @@ class GameHistoryDetailScreen extends StatelessWidget {
           itemCount: players.length,
           itemBuilder: (context, index) {
             final player = players[index];
-            final isWinner = index == 0;
+
+            // Calculer si ce joueur est gagnant
+            final isWinner = player.score == entry.winnerScore;
+
+            // Calculer la position réelle (en tenant compte des égalités)
+            int displayPosition = 1;
+            for (int i = 0; i < index; i++) {
+              if (players[i].score > player.score) {
+                displayPosition++;
+              }
+            }
+
+            // Déterminer s'il y a égalité avec le joueur précédent
             final isTie = index > 0 && players[index - 1].score == player.score;
 
-            return _buildPlayerRow(context, player, index + 1, isWinner, isTie);
+            return _buildPlayerRow(
+              context,
+              player,
+              displayPosition,
+              isWinner,
+              isTie,
+            );
           },
         ),
       ],
@@ -143,7 +165,7 @@ class GameHistoryDetailScreen extends StatelessWidget {
       leading: CircleAvatar(
         backgroundColor: isWinner ? Colors.amber : Colors.grey[300],
         child: Text(
-          '$position',
+          isTie ? '-' : '$position',
           style: TextStyle(
             color: isWinner ? Colors.white : Colors.black87,
             fontWeight: FontWeight.bold,
@@ -162,7 +184,9 @@ class GameHistoryDetailScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color:
               isWinner
+                  // ignore: deprecated_member_use
                   ? Colors.amber.withOpacity(0.2)
+                  // ignore: deprecated_member_use
                   : Theme.of(context).colorScheme.primary.withOpacity(0.1),
           borderRadius: BorderRadius.circular(16),
         ),
@@ -300,25 +324,17 @@ class GameHistoryDetailScreen extends StatelessWidget {
 
   // Recherche un élément par son ID
   BetItem? _findBetItem(String itemId) {
+    // D'abord chercher parmi les éléments gagnants
     try {
       return entry.scoringItems.firstWhere((item) => item.id == itemId);
     } catch (e) {
-      // Si l'élément n'est pas dans les éléments gagnants, chercher dans tous les éléments
-      for (final player in entry.players) {
-        for (final betItemId in player.betItemIds) {
-          if (betItemId == itemId) {
-            // Créer un élément avec les informations disponibles
-            // Remarque: ici on ne peut pas connaître le nom réel de l'élément
-            // car on n'a pas accès à la liste complète
-            return BetItem(
-              id: itemId,
-              name: 'Élément #$itemId',
-              isScoring: false,
-            );
-          }
-        }
+      // Ensuite, chercher dans tous les éléments disponibles de la partie
+      try {
+        return entry.availableBetItems.firstWhere((item) => item.id == itemId);
+      } catch (e) {
+        // Si toujours pas trouvé (pour la rétrocompatibilité avec les anciennes parties)
+        return BetItem(id: itemId, name: 'Élément #$itemId', isScoring: false);
       }
-      return null;
     }
   }
 }

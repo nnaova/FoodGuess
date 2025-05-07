@@ -78,8 +78,6 @@ class _MyAppState extends State<MyApp> {
           onError: Colors.white,
           surface: AppColors.beigeLight,
           onSurface: Colors.black87,
-          background: AppColors.beigeLight,
-          onBackground: Colors.black87,
         ),
         // Utilisation de polices système à la place des polices personnalisées
         fontFamily: 'Roboto',

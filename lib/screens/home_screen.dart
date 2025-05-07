@@ -47,6 +47,7 @@ class HomeScreen extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             Theme.of(context).colorScheme.primary,
+            // ignore: deprecated_member_use
             Theme.of(context).colorScheme.primary.withOpacity(0.6),
           ],
         ),
@@ -71,6 +72,7 @@ class HomeScreen extends StatelessWidget {
               _buildAnimatedFoodIcon(
                 Icons.apple,
                 45,
+                // ignore: deprecated_member_use
                 Theme.of(context).colorScheme.secondary.withOpacity(0.9),
               ),
             ],
@@ -85,6 +87,7 @@ class HomeScreen extends StatelessWidget {
               color: Colors.white,
               shadows: [
                 Shadow(
+                  // ignore: deprecated_member_use
                   color: Colors.black.withOpacity(0.2),
                   offset: const Offset(2, 2),
                   blurRadius: 3,
@@ -161,9 +164,9 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Deux cartes côte à côte pour la troisième ligne
           Row(
             children: [
@@ -175,7 +178,8 @@ class HomeScreen extends StatelessWidget {
                   subtitle: 'Comparer les joueurs',
                   icon: Icons.compare_arrows,
                   color: Colors.deepPurple,
-                  action: () => Navigator.pushNamed(context, '/player-comparison'),
+                  action:
+                      () => Navigator.pushNamed(context, '/player-comparison'),
                 ),
               ),
               const SizedBox(width: 16),
@@ -209,6 +213,7 @@ class HomeScreen extends StatelessWidget {
   }) {
     return Card(
       elevation: isMain ? 6 : 3,
+      // ignore: deprecated_member_use
       shadowColor: color.withOpacity(0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: InkWell(
@@ -223,6 +228,7 @@ class HomeScreen extends StatelessWidget {
                 width: isMain ? 60 : 50,
                 height: isMain ? 60 : 50,
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: color.withOpacity(0.15),
                   shape: BoxShape.circle,
                 ),

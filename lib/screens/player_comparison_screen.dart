@@ -26,8 +26,10 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
   int _gamesPlayed = 0;
   int _playerAWins = 0;
   int _playerBWins = 0;
+// Nouvelle variable pour les égalités
   double _playerAWinPercentage = 0;
   double _playerBWinPercentage = 0;
+  double _tiePercentage = 0; // Nouvelle variable pour le pourcentage d'égalités
   double _playerAAvgScore = 0;
   double _playerBAvgScore = 0;
 
@@ -39,10 +41,10 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    
+
     final players = await _playerStorage.loadPlayers();
     final history = await _historyStorage.loadGameHistory();
-    
+
     setState(() {
       _availablePlayers = players;
       _gameHistory = history;
@@ -57,10 +59,12 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
     }
 
     // Filtrer l'historique pour ne garder que les parties où les deux joueurs sont présents
-    final commonGames = _gameHistory.where((game) {
-      final playerIds = game.players.map((p) => p.id).toList();
-      return playerIds.contains(_playerA!.id) && playerIds.contains(_playerB!.id);
-    }).toList();
+    final commonGames =
+        _gameHistory.where((game) {
+          final playerIds = game.players.map((p) => p.id).toList();
+          return playerIds.contains(_playerA!.id) &&
+              playerIds.contains(_playerB!.id);
+        }).toList();
 
     // Si aucune partie commune, réinitialiser les stats
     if (commonGames.isEmpty) {
@@ -74,39 +78,71 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
     // Calculer les statistiques
     int playerAWins = 0;
     int playerBWins = 0;
+    int ties = 0; // Compteur pour les égalités
     int totalPlayerAScore = 0;
     int totalPlayerBScore = 0;
 
     for (final game in commonGames) {
       // Rechercher les joueurs dans cette partie spécifique
-      final playerAInGame = game.players.firstWhere((p) => p.id == _playerA!.id);
-      final playerBInGame = game.players.firstWhere((p) => p.id == _playerB!.id);
-      
+      final playerAInGame = game.players.firstWhere(
+        (p) => p.id == _playerA!.id,
+      );
+      final playerBInGame = game.players.firstWhere(
+        (p) => p.id == _playerB!.id,
+      );
+
       // Ajouter les scores
       totalPlayerAScore += playerAInGame.score;
       totalPlayerBScore += playerBInGame.score;
-      
-      // Compter les victoires
-      if (game.winnerName == playerAInGame.name) {
-        playerAWins++;
-      } else if (game.winnerName == playerBInGame.name) {
-        playerBWins++;
+
+      if (game.isTie) {
+        // Cas d'égalité entre au moins deux joueurs
+        // Vérifier si nos deux joueurs font partie des gagnants
+        final isPlayerATied = game.winnerNames.contains(playerAInGame.name);
+        final isPlayerBTied = game.winnerNames.contains(playerBInGame.name);
+
+        if (isPlayerATied && isPlayerBTied) {
+          // Les deux joueurs sont à égalité
+          ties++;
+        } else if (isPlayerATied) {
+          playerAWins++;
+        } else if (isPlayerBTied) {
+          playerBWins++;
+        }
+        // Sinon, aucun des deux n'est gagnant
+      } else {
+        // Cas normal (un seul gagnant)
+        if (game.winnerName == playerAInGame.name) {
+          playerAWins++;
+        } else if (game.winnerName == playerBInGame.name) {
+          playerBWins++;
+        }
+        // Sinon, c'est un autre joueur qui a gagné
       }
     }
 
     // Calculer les pourcentages et moyennes
     final gamesPlayed = commonGames.length;
-    final playerAWinPercentage = gamesPlayed > 0 ? (playerAWins / gamesPlayed) * 100 : 0;
-    final playerBWinPercentage = gamesPlayed > 0 ? (playerBWins / gamesPlayed) * 100 : 0;
-    final playerAAvgScore = gamesPlayed > 0 ? totalPlayerAScore / gamesPlayed : 0;
-    final playerBAvgScore = gamesPlayed > 0 ? totalPlayerBScore / gamesPlayed : 0;
+    final playerAWinPercentage =
+        gamesPlayed > 0 ? (playerAWins / gamesPlayed) * 100 : 0;
+    final playerBWinPercentage =
+        gamesPlayed > 0 ? (playerBWins / gamesPlayed) * 100 : 0;
+    final tiePercentage = gamesPlayed > 0 ? (ties / gamesPlayed) * 100 : 0;
+    final playerAAvgScore =
+        gamesPlayed > 0 ? totalPlayerAScore / gamesPlayed : 0;
+    final playerBAvgScore =
+        gamesPlayed > 0 ? totalPlayerBScore / gamesPlayed : 0;
 
     setState(() {
       _gamesPlayed = gamesPlayed;
       _playerAWins = playerAWins;
       _playerBWins = playerBWins;
+// Nouvelle variable pour les égalités
       _playerAWinPercentage = playerAWinPercentage.toDouble();
       _playerBWinPercentage = playerBWinPercentage.toDouble();
+      _tiePercentage =
+          tiePercentage
+              .toDouble(); // Nouvelle variable pour le pourcentage d'égalités
       _playerAAvgScore = playerAAvgScore.toDouble();
       _playerBAvgScore = playerBAvgScore.toDouble();
     });
@@ -116,8 +152,10 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
     setState(() {
       _playerAWins = 0;
       _playerBWins = 0;
+// Réinitialiser les égalités
       _playerAWinPercentage = 0;
       _playerBWinPercentage = 0;
+      _tiePercentage = 0; // Réinitialiser le pourcentage d'égalités
       _playerAAvgScore = 0;
       _playerBAvgScore = 0;
     });
@@ -131,32 +169,33 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _availablePlayers.length < 2
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _availablePlayers.length < 2
               ? const Center(
-                  child: Text(
-                    'Il faut au moins 2 joueurs dans la base de données pour faire une comparaison',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 18),
-                  ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Sélection des joueurs
-                      _buildPlayerSelectionSection(),
-                      
-                      const SizedBox(height: 24),
-                      
-                      // Résultats de la comparaison
-                      if (_playerA != null && _playerB != null)
-                        _buildComparisonResults(),
-                    ],
-                  ),
+                child: Text(
+                  'Il faut au moins 2 joueurs dans la base de données pour faire une comparaison',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18),
                 ),
+              )
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Sélection des joueurs
+                    _buildPlayerSelectionSection(),
+
+                    const SizedBox(height: 24),
+
+                    // Résultats de la comparaison
+                    if (_playerA != null && _playerB != null)
+                      _buildComparisonResults(),
+                  ],
+                ),
+              ),
     );
   }
 
@@ -169,10 +208,12 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Sélectionnez les joueurs à comparer',
-                style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'Sélectionnez les joueurs à comparer',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 16),
-            
+
             // Sélection du joueur A
             _buildPlayerDropdown(
               label: 'Joueur A',
@@ -184,9 +225,9 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
                 _calculateStats();
               },
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Sélection du joueur B
             _buildPlayerDropdown(
               label: 'Joueur B',
@@ -198,8 +239,10 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
                 _calculateStats();
               },
             ),
-            
-            if (_playerA != null && _playerB != null && _playerA!.id == _playerB!.id)
+
+            if (_playerA != null &&
+                _playerB != null &&
+                _playerA!.id == _playerB!.id)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
@@ -229,12 +272,13 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
             border: OutlineInputBorder(),
             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           ),
-          items: _availablePlayers.map((player) {
-            return DropdownMenuItem<Player>(
-              value: player,
-              child: Text(player.name),
-            );
-          }).toList(),
+          items:
+              _availablePlayers.map((player) {
+                return DropdownMenuItem<Player>(
+                  value: player,
+                  child: Text(player.name),
+                );
+              }).toList(),
           onChanged: onChanged,
         ),
       ],
@@ -246,7 +290,7 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
     if (_playerA!.id == _playerB!.id) {
       return const SizedBox.shrink();
     }
-    
+
     // Vérifier s'il y a des parties communes
     if (_gamesPlayed == 0) {
       return Center(
@@ -260,7 +304,7 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
         ),
       );
     }
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -285,9 +329,9 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
             ),
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Graphiques de comparaison
         Row(
           children: [
@@ -324,7 +368,13 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
                         suffix: '%',
                       ),
                       const SizedBox(height: 8),
-                      Text('Égalités: ${(_gamesPlayed - _playerAWins - _playerBWins)} parties'),
+                      _buildComparisonBar(
+                        label: 'Égalités',
+                        value: _tiePercentage,
+                        color: Colors.green,
+                        total: 100,
+                        suffix: '%',
+                      ),
                     ],
                   ),
                 ),
@@ -332,9 +382,9 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
             ),
           ],
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Moyenne de score par partie
         Card(
           elevation: 2,
@@ -345,19 +395,17 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
               children: [
                 const Text(
                   'Moyenne de points par partie',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 _buildComparisonBar(
                   label: _playerA!.name,
                   value: _playerAAvgScore,
                   color: Colors.blue,
-                  total: _playerAAvgScore > _playerBAvgScore
-                      ? _playerAAvgScore
-                      : _playerBAvgScore,
+                  total:
+                      _playerAAvgScore > _playerBAvgScore
+                          ? _playerAAvgScore
+                          : _playerBAvgScore,
                   suffix: ' pts',
                 ),
                 const SizedBox(height: 8),
@@ -365,18 +413,19 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
                   label: _playerB!.name,
                   value: _playerBAvgScore,
                   color: Colors.red,
-                  total: _playerAAvgScore > _playerBAvgScore
-                      ? _playerAAvgScore
-                      : _playerBAvgScore,
+                  total:
+                      _playerAAvgScore > _playerBAvgScore
+                          ? _playerAAvgScore
+                          : _playerBAvgScore,
                   suffix: ' pts',
                 ),
               ],
             ),
           ),
         ),
-        
+
         const SizedBox(height: 24),
-        
+
         // Tableau récapitulatif des statistiques
         Card(
           elevation: 2,
@@ -390,9 +439,26 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 16),
-                _buildStatRow('Nombre de parties gagnées', '${_playerAWins}', '${_playerBWins}'),
-                _buildStatRow('Pourcentage de victoire', '${_playerAWinPercentage.toStringAsFixed(1)}%', '${_playerBWinPercentage.toStringAsFixed(1)}%'),
-                _buildStatRow('Moyenne de points par partie', '${_playerAAvgScore.toStringAsFixed(2)} pts', '${_playerBAvgScore.toStringAsFixed(2)} pts'),
+                _buildStatRow(
+                  'Nombre de parties gagnées',
+                  '$_playerAWins',
+                  '$_playerBWins',
+                ),
+                _buildStatRow(
+                  'Pourcentage de victoire',
+                  '${_playerAWinPercentage.toStringAsFixed(1)}%',
+                  '${_playerBWinPercentage.toStringAsFixed(1)}%',
+                ),
+                _buildStatRow(
+                  'Pourcentage d\'égalités',
+                  '${_tiePercentage.toStringAsFixed(1)}%',
+                  '-',
+                ),
+                _buildStatRow(
+                  'Moyenne de points par partie',
+                  '${_playerAAvgScore.toStringAsFixed(2)} pts',
+                  '${_playerBAvgScore.toStringAsFixed(2)} pts',
+                ),
               ],
             ),
           ),
@@ -409,16 +475,13 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
     required String suffix,
   }) {
     final percentage = total > 0 ? (value / total) * 100 : 0;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label),
-            Text('${value.toStringAsFixed(1)}$suffix'),
-          ],
+          children: [Text(label), Text('${value.toStringAsFixed(1)}$suffix')],
         ),
         const SizedBox(height: 4),
         LinearProgressIndicator(
@@ -430,7 +493,7 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
       ],
     );
   }
-  
+
   Widget _buildStatRow(String label, String valueA, String valueB) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
@@ -438,9 +501,9 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
         children: [
           Expanded(flex: 3, child: Text(label)),
           Expanded(
-            flex: 2, 
+            flex: 2,
             child: Text(
-              valueA, 
+              valueA,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.blue[700],
@@ -449,9 +512,9 @@ class _PlayerComparisonScreenState extends State<PlayerComparisonScreen> {
             ),
           ),
           Expanded(
-            flex: 2, 
+            flex: 2,
             child: Text(
-              valueB, 
+              valueB,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.red[700],

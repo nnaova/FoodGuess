@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/game_history_entry.dart';
 import '../models/game.dart';
@@ -17,15 +18,40 @@ class GameHistoryStorage {
     final List<Player> sortedPlayers = List.from(game.players)
       ..sort((a, b) => b.score.compareTo(a.score));
 
+    // Vérifier s'il y a égalité pour la première place
+    bool isTie = false;
+    String winnerName = 'Aucun gagnant';
+    int winnerScore = 0;
+
+    if (sortedPlayers.isNotEmpty) {
+      winnerScore = sortedPlayers[0].score;
+
+      // Compter combien de joueurs ont le score le plus élevé
+      final tiedPlayers =
+          sortedPlayers.where((player) => player.score == winnerScore).toList();
+
+      if (tiedPlayers.length > 1) {
+        // Cas d'égalité
+        isTie = true;
+        final names = tiedPlayers.map((p) => p.name).toList();
+        winnerName = names.join(' et '); // Ex: "Alice et Bob"
+      } else {
+        // Cas normal (un seul gagnant)
+        winnerName = sortedPlayers[0].name;
+      }
+    }
+
     // Créer une nouvelle entrée d'historique
     final historyEntry = GameHistoryEntry(
       id: const Uuid().v4(),
       dateTime: DateTime.now(),
       players: sortedPlayers,
       scoringItems: game.scoringItems,
-      winnerName:
-          sortedPlayers.isNotEmpty ? sortedPlayers[0].name : 'Aucun gagnant',
-      winnerScore: sortedPlayers.isNotEmpty ? sortedPlayers[0].score : 0,
+      availableBetItems:
+          game.availableBetItems, // Sauvegarde de tous les éléments disponibles
+      winnerName: winnerName,
+      winnerScore: winnerScore,
+      isTie: isTie, // Indiquer s'il y a égalité
     );
 
     // Ajouter la nouvelle entrée à l'historique
@@ -51,7 +77,9 @@ class GameHistoryStorage {
         // Trier par date décroissante (du plus récent au plus ancien)
         ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
     } catch (e) {
-      print('Erreur lors du chargement de l\'historique: $e');
+      if (kDebugMode) {
+        print('Erreur lors du chargement de l\'historique: $e');
+      }
       return [];
     }
   }

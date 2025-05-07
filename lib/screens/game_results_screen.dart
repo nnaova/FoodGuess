@@ -284,7 +284,7 @@ class _GameResultsScreenState extends State<GameResultsScreen> {
                   'Éléments choisis:',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onBackground,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),

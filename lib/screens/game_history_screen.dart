@@ -106,6 +106,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
           Icon(
             Icons.history,
             size: 80,
+            // ignore: deprecated_member_use
             color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
           ),
           const SizedBox(height: 16),
@@ -151,6 +152,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                     decoration: BoxDecoration(
                       color: Theme.of(
                         context,
+                      // ignore: deprecated_member_use
                       ).colorScheme.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(25),
                     ),
@@ -182,9 +184,14 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                               color: Colors.amber,
                             ),
                             const SizedBox(width: 4),
-                            Text(
-                              'Gagnant: ${entry.winnerName}',
-                              style: const TextStyle(fontSize: 14),
+                            Expanded(
+                              child: Text(
+                                entry.isTie
+                                    ? 'Égalité: ${entry.winnerName}'
+                                    : 'Gagnant: ${entry.winnerName}',
+                                style: const TextStyle(fontSize: 14),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),

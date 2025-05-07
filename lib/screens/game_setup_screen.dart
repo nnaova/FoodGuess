@@ -179,10 +179,10 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
                                       child: Column(
                                         children: [
                                           CircleAvatar(
+                                            radius: 24,
                                             child: Text(
                                               player.name[0].toUpperCase(),
                                             ),
-                                            radius: 24,
                                           ),
                                           const SizedBox(height: 5),
                                           Text(player.name),
