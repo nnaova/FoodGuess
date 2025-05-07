@@ -133,7 +133,7 @@ class HomeScreen extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Deux cartes côte à côte (au lieu de trois)
+          // Deux cartes côte à côte pour la deuxième ligne
           Row(
             children: [
               // Carte pour gérer les éléments
@@ -157,6 +157,37 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.history,
                   color: Colors.teal,
                   action: () => Navigator.pushNamed(context, '/game-history'),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Deux cartes côte à côte pour la troisième ligne
+          Row(
+            children: [
+              // Carte pour comparer les joueurs
+              Expanded(
+                child: _buildPlayCard(
+                  context,
+                  title: 'Statistiques',
+                  subtitle: 'Comparer les joueurs',
+                  icon: Icons.compare_arrows,
+                  color: Colors.deepPurple,
+                  action: () => Navigator.pushNamed(context, '/player-comparison'),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Carte pour gérer les joueurs
+              Expanded(
+                child: _buildPlayCard(
+                  context,
+                  title: 'Joueurs',
+                  subtitle: 'Gérer les profils',
+                  icon: Icons.people,
+                  color: Colors.amber,
+                  action: () => Navigator.pushNamed(context, '/players'),
                 ),
               ),
             ],
