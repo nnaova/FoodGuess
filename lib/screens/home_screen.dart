@@ -297,20 +297,6 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 const Divider(),
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildSocialIcon(
-                      Icons.email,
-                      Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(width: 24),
-                    _buildSocialIcon(Icons.web, Colors.blue),
-                    const SizedBox(width: 24),
-                    _buildSocialIcon(Icons.face, Colors.indigo),
-                  ],
-                ),
-                const SizedBox(height: 16),
                 Text(
                   'Merci de jouer à FoodGuess !',
                   textAlign: TextAlign.center,
@@ -350,18 +336,6 @@ class HomeScreen extends StatelessWidget {
   }
 
   // Icône de réseau social pour les crédits
-  Widget _buildSocialIcon(IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        // ignore: deprecated_member_use
-        color: color.withOpacity(0.1),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(icon, color: color, size: 24),
-    );
-  }
-
   // Carte de jeu
   Widget _buildPlayCard(
     BuildContext context, {
