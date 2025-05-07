@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/player.dart';
 import '../services/player_storage.dart';
+import '../screens/player_stats_screen.dart';
 
 class PlayersScreen extends StatefulWidget {
   const PlayersScreen({super.key});
@@ -215,33 +216,55 @@ class _PlayersScreenState extends State<PlayersScreen> {
                               itemCount: _filteredPlayers.length,
                               itemBuilder: (ctx, index) {
                                 final player = _filteredPlayers[index];
-                                return ListTile(
-                                  leading: CircleAvatar(
-                                    child: Text('${index + 1}'),
+                                return Card(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 15,
+                                    vertical: 8,
                                   ),
-                                  title: Text(player.name),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.edit),
-                                        onPressed:
-                                            () => _showAddEditDialog(
-                                              player: player,
-                                              index: _players.indexOf(player),
-                                            ),
+                                  child: ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: Theme.of(context).colorScheme.primary,
+                                      child: Text(
+                                        player.name[0].toUpperCase(),
                                       ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.delete,
-                                          color: Colors.red,
+                                    ),
+                                    title: Text(player.name),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.bar_chart,
+                                            color: Colors.blue,
+                                          ),
+                                          tooltip: 'Voir les statistiques',
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => PlayerStatsScreen(player: player),
+                                              ),
+                                            );
+                                          },
                                         ),
-                                        onPressed:
-                                            () => _deletePlayer(
-                                              _players.indexOf(player),
-                                            ),
-                                      ),
-                                    ],
+                                        IconButton(
+                                          icon: const Icon(Icons.edit),
+                                          onPressed: () => _showAddEditDialog(
+                                            player: player,
+                                            index: _players.indexOf(player),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () => _deletePlayer(
+                                            _players.indexOf(player),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 );
                               },

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'models/bet_item.dart';
 import 'models/game.dart';
+import 'models/game_history_entry.dart'; // Nouvel import
 import 'services/bet_item_storage.dart';
 import 'screens/home_screen.dart';
 import 'screens/bet_items_screen.dart';
@@ -9,8 +10,10 @@ import 'screens/game_play_screen.dart';
 import 'screens/game_scoring_screen.dart';
 import 'screens/game_results_screen.dart';
 import 'screens/game_history_screen.dart';
+import 'screens/game_history_detail_screen.dart'; // Nouvel import
 import 'screens/players_screen.dart';
-import 'screens/player_comparison_screen.dart'; // Nouvel import
+import 'screens/player_comparison_screen.dart';
+import 'screens/player_stats_screen.dart'; // Nouvel import
 
 // Nouvelles couleurs de la charte graphique FoodGuess
 class AppColors {
@@ -152,6 +155,11 @@ class _MyAppState extends State<MyApp> {
           final game = settings.arguments as Game;
           return MaterialPageRoute(
             builder: (context) => GameResultsScreen(game: game),
+          );
+        } else if (settings.name == '/game-history-detail') {
+          final entry = settings.arguments as GameHistoryEntry;
+          return MaterialPageRoute(
+            builder: (context) => GameHistoryDetailScreen(entry: entry),
           );
         }
         return null;
