@@ -44,9 +44,10 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
     final history = await _historyStorage.loadGameHistory();
 
     // Filtrer l'historique pour ne garder que les parties où ce joueur est présent
-    final playerGames = history.where((game) {
-      return game.players.any((p) => p.id == widget.player.id);
-    }).toList();
+    final playerGames =
+        history.where((game) {
+          return game.players.any((p) => p.id == widget.player.id);
+        }).toList();
 
     setState(() {
       _gameHistory = playerGames;
@@ -62,32 +63,33 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
 
     // Nombre total de parties
     _gamesPlayed = _gameHistory.length;
-    
+
     // Initialisation des compteurs
     _wins = 0;
     _ties = 0;
     _losses = 0;
     _totalScore = 0;
     _highestScore = 0;
-    
+
     // Map pour compter les joueurs avec qui ce joueur a joué
     Map<String, int> playedWith = {};
-    
+
     for (var game in _gameHistory) {
       // Récupérer le joueur dans cette partie spécifique
       final playerInGame = game.players.firstWhere(
         (p) => p.id == widget.player.id,
-        orElse: () => Player(id: '', name: ''), // Cas improbable mais nécessaire
+        orElse:
+            () => Player(id: '', name: ''), // Cas improbable mais nécessaire
       );
-      
+
       if (playerInGame.id.isEmpty) continue;
-      
+
       // Comptabiliser le score
       _totalScore += playerInGame.score;
       if (playerInGame.score > _highestScore) {
         _highestScore = playerInGame.score;
       }
-      
+
       // Déterminer si c'est une victoire, égalité ou défaite
       if (game.isTie) {
         // C'est une égalité, vérifier si notre joueur en fait partie
@@ -104,26 +106,26 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
           _losses++;
         }
       }
-      
+
       // Comptabiliser les joueurs avec qui ce joueur a joué
       for (var otherPlayer in game.players) {
         if (otherPlayer.id != widget.player.id) {
-          playedWith[otherPlayer.name] = (playedWith[otherPlayer.name] ?? 0) + 1;
+          playedWith[otherPlayer.name] =
+              (playedWith[otherPlayer.name] ?? 0) + 1;
         }
       }
     }
-    
+
     // Calculer les taux
     _winRate = _gamesPlayed > 0 ? (_wins / _gamesPlayed) * 100 : 0;
     _tieRate = _gamesPlayed > 0 ? (_ties / _gamesPlayed) * 100 : 0;
     _lossRate = _gamesPlayed > 0 ? (_losses / _gamesPlayed) * 100 : 0;
     _avgScore = _gamesPlayed > 0 ? _totalScore / _gamesPlayed : 0;
-    
+
     // Déterminer le joueur avec qui ce joueur a le plus joué
     if (playedWith.isNotEmpty) {
-      _mostPlayedWith = playedWith.entries
-          .reduce((a, b) => a.value > b.value ? a : b)
-          .key;
+      _mostPlayedWith =
+          playedWith.entries.reduce((a, b) => a.value > b.value ? a : b).key;
     }
   }
 
@@ -135,9 +137,10 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _gamesPlayed == 0
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _gamesPlayed == 0
               ? _buildNoGamesView()
               : _buildStatsView(),
     );
@@ -178,15 +181,15 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
         children: [
           _buildPlayerHeader(),
           const SizedBox(height: 24),
-          
+
           // Résumé des statistiques
           _buildStatsSummary(),
           const SizedBox(height: 24),
-          
+
           // Graphique de performance
           _buildPerformanceChart(),
           const SizedBox(height: 24),
-          
+
           // Historique des parties récentes
           _buildRecentGames(),
           const SizedBox(height: 16),
@@ -194,7 +197,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
       ),
     );
   }
-  
+
   Widget _buildPlayerHeader() {
     return Card(
       elevation: 4,
@@ -229,17 +232,11 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
                   const SizedBox(height: 8),
                   Text(
                     '$_gamesPlayed partie${_gamesPlayed > 1 ? "s" : ""} jouée${_gamesPlayed > 1 ? "s" : ""}',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                   Text(
                     'Joue le plus souvent avec $_mostPlayedWith',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -321,10 +318,10 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
   }
 
   Widget _buildStatColumn(
-    String title, 
-    String value, 
-    String subtitle, 
-    Color color
+    String title,
+    String value,
+    String subtitle,
+    Color color,
   ) {
     return Column(
       children: [
@@ -345,13 +342,10 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
             color: color,
           ),
         ),
-        if (subtitle.isNotEmpty) 
+        if (subtitle.isNotEmpty)
           Text(
             subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           ),
       ],
     );
@@ -431,18 +425,9 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
   Widget _buildLegendItem(String text, Color color) {
     return Row(
       children: [
-        Container(
-          width: 12,
-          height: 12,
-          color: color,
-        ),
+        Container(width: 12, height: 12, color: color),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: const TextStyle(
-            fontSize: 12,
-          ),
-        ),
+        Text(text, style: const TextStyle(fontSize: 12)),
       ],
     );
   }
@@ -457,16 +442,13 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
     final displayValue = value.toStringAsFixed(1);
     final maxValue = total ?? 100.0;
     final percentage = (value / maxValue).clamp(0.0, 1.0);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label),
-            Text('$displayValue$suffix'),
-          ],
+          children: [Text(label), Text('$displayValue$suffix')],
         ),
         const SizedBox(height: 4),
         Container(
@@ -494,7 +476,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
   Widget _buildRecentGames() {
     // Limiter l'affichage aux 5 dernières parties
     final recentGames = _gameHistory.take(5).toList();
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -523,7 +505,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
             final playerInGame = game.players.firstWhere(
               (p) => p.id == widget.player.id,
             );
-            
+
             // Déterminer si le joueur a gagné cette partie
             bool isWinner = false;
             if (game.isTie) {
@@ -531,7 +513,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
             } else {
               isWinner = game.winnerName == playerInGame.name;
             }
-            
+
             return Card(
               margin: const EdgeInsets.only(bottom: 8.0),
               child: ListTile(
@@ -543,14 +525,15 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
                   ),
                 ),
                 title: Text(
-                  isWinner
-                      ? (game.isTie ? 'Égalité' : 'Victoire')
-                      : 'Défaite',
+                  isWinner ? (game.isTie ? 'Égalité' : 'Victoire') : 'Défaite',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: isWinner
-                        ? (game.isTie ? Colors.amber[800] : Colors.green[700])
-                        : Colors.red[700],
+                    color:
+                        isWinner
+                            ? (game.isTie
+                                ? Colors.amber[800]
+                                : Colors.green[700])
+                            : Colors.red[700],
                   ),
                 ),
                 subtitle: Text(

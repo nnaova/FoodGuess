@@ -223,10 +223,9 @@ class _PlayersScreenState extends State<PlayersScreen> {
                                   ),
                                   child: ListTile(
                                     leading: CircleAvatar(
-                                      backgroundColor: Theme.of(context).colorScheme.primary,
-                                      child: Text(
-                                        player.name[0].toUpperCase(),
-                                      ),
+                                      backgroundColor:
+                                          Theme.of(context).colorScheme.primary,
+                                      child: Text(player.name[0].toUpperCase()),
                                     ),
                                     title: Text(player.name),
                                     trailing: Row(
@@ -242,26 +241,32 @@ class _PlayersScreenState extends State<PlayersScreen> {
                                             Navigator.push(
                                               context,
                                               MaterialPageRoute(
-                                                builder: (context) => PlayerStatsScreen(player: player),
+                                                builder:
+                                                    (context) =>
+                                                        PlayerStatsScreen(
+                                                          player: player,
+                                                        ),
                                               ),
                                             );
                                           },
                                         ),
                                         IconButton(
                                           icon: const Icon(Icons.edit),
-                                          onPressed: () => _showAddEditDialog(
-                                            player: player,
-                                            index: _players.indexOf(player),
-                                          ),
+                                          onPressed:
+                                              () => _showAddEditDialog(
+                                                player: player,
+                                                index: _players.indexOf(player),
+                                              ),
                                         ),
                                         IconButton(
                                           icon: const Icon(
                                             Icons.delete,
                                             color: Colors.red,
                                           ),
-                                          onPressed: () => _deletePlayer(
-                                            _players.indexOf(player),
-                                          ),
+                                          onPressed:
+                                              () => _deletePlayer(
+                                                _players.indexOf(player),
+                                              ),
                                         ),
                                       ],
                                     ),
