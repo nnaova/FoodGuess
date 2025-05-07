@@ -5,19 +5,20 @@ FoodGuess est une application ludique qui permet de parier sur les aliments qui 
 ## Fonctionnalités
 
 - **Nouvelle partie**: Créez une session et jouez avec vos amis
-- **Gestion des aliments**: Ajoutez ou modifiez les éléments disponibles pour parier
+- **Gestion des aliments**: Ajoutez ou modifiez les éléments disponibles pour parier, définissez leur valeur en points
 - **Historique**: Consultez les parties précédentes et les résultats détaillés
-- **Statistiques**: Comparez les performances des joueurs
+- **Statistiques**: Comparez les performances des joueurs et consultez les statistiques individuelles détaillées
 - **Gestion des joueurs**: Créez et modifiez les profils des joueurs
 
 ## Comment jouer
 
 1. Commencez par créer une liste d'aliments dans la section "Gérer aliments"
-2. Ajoutez des joueurs dans la section "Joueurs"
-3. Démarrez une nouvelle partie et sélectionnez les joueurs participants
-4. Chaque joueur choisit à son tour un aliment sur lequel parier
-5. À la fin, sélectionnez les aliments qui étaient réellement présents lors de la collecte
-6. Les joueurs marquent des points pour chaque prédiction correcte
+2. Pour chaque aliment, vous pouvez définir une description et sa valeur en points (par défaut: 1 point)
+3. Ajoutez des joueurs dans la section "Joueurs"
+4. Démarrez une nouvelle partie et sélectionnez les joueurs participants
+5. Chaque joueur choisit à son tour un aliment sur lequel parier
+6. À la fin, sélectionnez les aliments qui étaient réellement présents lors de la collecte
+7. Les joueurs marquent des points pour chaque prédiction correcte selon la valeur en points de l'aliment
 
 ## Installation et développement
 
@@ -96,6 +97,16 @@ lib/
 ## Versions
 
 L'application est actuellement en version 1.0 (Mai 2025)
+
+## Statistiques des joueurs
+
+L'application offre maintenant des statistiques détaillées pour chaque joueur:
+
+- Taux de victoire, d'égalités et de défaites
+- Score moyen par partie
+- Score total et meilleur score
+- Visualisation graphique des performances
+- Historique des parties récentes
 
 ## Crédits
 

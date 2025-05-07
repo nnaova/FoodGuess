@@ -92,7 +92,7 @@ class _GameResultsScreenState extends State<GameResultsScreen> {
                                     context,
                                   ).colorScheme.primaryContainer,
                               label: Text(
-                                item.name,
+                                "${item.name} (${item.points} pt${item.points > 1 ? 's' : ''})",
                                 style: TextStyle(
                                   color:
                                       Theme.of(
@@ -299,7 +299,7 @@ class _GameResultsScreenState extends State<GameResultsScreen> {
                                 ? Colors.green[100]
                                 : Colors.grey[100],
                         label: Text(
-                          item.name,
+                          "${item.name} (${item.points} pt${item.points > 1 ? 's' : ''})",
                           style: TextStyle(
                             color:
                                 item.isScoring

@@ -23,8 +23,15 @@ class Player {
   void calculateScore(List<BetItem> scoringItems) {
     score = 0;
     for (final betItemId in betItemIds) {
-      if (scoringItems.any((item) => item.id == betItemId && item.isScoring)) {
-        score++;
+      // Rechercher l'élément correspondant dans les éléments qui rapportent des points
+      final scoringItem = scoringItems.firstWhere(
+        (item) => item.id == betItemId && item.isScoring,
+        orElse: () => BetItem(id: '', name: ''),
+      );
+
+      // Si l'élément existe et rapporte des points, ajouter ses points au score
+      if (scoringItem.id.isNotEmpty) {
+        score += scoringItem.points;
       }
     }
   }

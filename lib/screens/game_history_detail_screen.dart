@@ -225,7 +225,9 @@ class GameHistoryDetailScreen extends StatelessWidget {
                           backgroundColor:
                               isScoring ? Colors.green[100] : Colors.grey[100],
                           label: Text(
-                            item?.name ?? 'Élément inconnu',
+                            item?.name != null
+                                ? "${item!.name} (${item.points} pt${item.points > 1 ? 's' : ''})"
+                                : 'Élément inconnu',
                             style: TextStyle(
                               color:
                                   isScoring
@@ -306,7 +308,7 @@ class GameHistoryDetailScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  item.name,
+                                  "${item.name} (${item.points} pt${item.points > 1 ? 's' : ''})",
                                   style: TextStyle(
                                     color: Colors.green[800],
                                     fontWeight: FontWeight.w500,
