@@ -115,6 +115,21 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
                       if (value == null || value.trim().isEmpty) {
                         return 'Veuillez entrer un nom';
                       }
+                      
+                      // Vérifier s'il existe déjà un aliment avec ce nom
+                      final trimmedValue = value.trim();
+                      final isEditing = item != null;
+                      
+                      // Lors de la modification, on ne vérifie pas le nom actuel de l'élément
+                      bool alreadyExists = _betItems.any((betItem) => 
+                        betItem.name.toLowerCase() == trimmedValue.toLowerCase() && 
+                        (!isEditing || betItem.id != item.id)
+                      );
+                      
+                      if (alreadyExists) {
+                        return 'Un aliment avec ce nom existe déjà';
+                      }
+                      
                       return null;
                     },
                   ),

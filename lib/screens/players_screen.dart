@@ -106,6 +106,21 @@ class _PlayersScreenState extends State<PlayersScreen> {
                       if (value == null || value.trim().isEmpty) {
                         return 'Veuillez entrer un nom';
                       }
+                      
+                      // Vérifier s'il existe déjà un joueur avec ce nom
+                      final trimmedValue = value.trim();
+                      final isEditing = player != null;
+                      
+                      // Lors de la modification, on ne vérifie pas le nom actuel du joueur
+                      bool alreadyExists = _players.any((existingPlayer) => 
+                        existingPlayer.name.toLowerCase() == trimmedValue.toLowerCase() && 
+                        (!isEditing || existingPlayer.id != player.id)
+                      );
+                      
+                      if (alreadyExists) {
+                        return 'Un joueur avec ce nom existe déjà';
+                      }
+                      
                       return null;
                     },
                   ),
