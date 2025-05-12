@@ -96,7 +96,7 @@ lib/
 
 ## Versions
 
-L'application est actuellement en version 1.0 (Mai 2025)
+L'application est actuellement en version 1.1 (Mai 2025)
 
 ## Statistiques des joueurs
 
@@ -110,5 +110,4 @@ L'application offre maintenant des statistiques détaillées pour chaque joueur:
 
 ## Crédits
 
-- **Concept & Design**: Alexandre Giordana
-- **Développement**: Alexandre Giordana
+- **Concept & Design & Développement**: Alexandre Giordana

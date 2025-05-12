@@ -1,0 +1,92 @@
+name: Automatic GitHub Release
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+
+jobs:
+  check_merge_from_dev:
+    runs-on: ubuntu-latest
+    outputs:
+      is_merge_from_dev: ${{ steps.check_merge.outputs.is_merge_from_dev }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if commit is a merge from dev to main
+        id: check_merge
+        run: |
+          LATEST_COMMIT_MSG=$(git log -1 --pretty=format:"%s")
+          MERGE_PATTERN="Merge.*dev.*into.*main"
+          if [[ $LATEST_COMMIT_MSG =~ $MERGE_PATTERN ]]; then
+            echo "is_merge_from_dev=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_merge_from_dev=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract version from pubspec.yaml
+        id: get_version
+        if: steps.check_merge.outputs.is_merge_from_dev == 'true'
+        run: |
+          VERSION=$(grep -m 1 "version:" pubspec.yaml | awk '{print $2}' | cut -d '+' -f1)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+  create_release:
+    needs: check_merge_from_dev
+    if: needs.check_merge_from_dev.outputs.is_merge_from_dev == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.7.2"
+          channel: "stable"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build release for Android
+        run: flutter build apk --release
+
+      - name: Build release for Web
+        run: flutter build web --release
+
+      - name: Zip Web Build
+        run: |
+          cd build/web
+          zip -r ../../foodguess-web-${{ needs.check_merge_from_dev.outputs.version }}.zip .
+          cd ../..
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.check_merge_from_dev.outputs.version }}
+          name: Release v${{ needs.check_merge_from_dev.outputs.version }}
+          body: |
+            # FoodGuess v${{ needs.check_merge_from_dev.outputs.version }}
+
+            Cette version est automatiquement publiée suite au merge de la branche `dev` vers `main`.
+
+            ## Téléchargements
+            - Application Android (APK)
+            - Version Web (ZIP)
+
+            ## Notes de version
+            _Consultez l'historique des commits pour plus de détails sur les changements apportés._
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            foodguess-web-${{ needs.check_merge_from_dev.outputs.version }}.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
