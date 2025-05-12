@@ -93,49 +93,99 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.16.9"
+          flutter-version: "3.19.0"
           channel: "stable"
+
+      - name: Display Flutter & Dart versions
+        run: |
+          flutter --version
+          dart --version
+          echo "Vérification de la configuration du projet..."
 
       # Modification temporaire du pubspec.yaml pour la compatibilité
       - name: Ajuster les dépendances pour la compatibilité
         run: |
+          # Sauvegarder le pubspec.yaml original
+          cp pubspec.yaml pubspec.yaml.bak
+
+          # Ajuster les versions des dépendances pour être compatibles avec la version de Flutter utilisée
           sed -i 's/flutter_lints: \^5.0.0/flutter_lints: \^2.0.0/' pubspec.yaml
           sed -i 's/cupertino_icons: \^1.0.8/cupertino_icons: \^1.0.2/' pubspec.yaml
           sed -i 's/uuid: \^4.4.1/uuid: \^3.0.7/' pubspec.yaml
           sed -i 's/provider: \^6.1.2/provider: \^6.0.5/' pubspec.yaml
-          # Modifier l'environnement SDK pour être compatible avec Flutter 3.16.9
-          sed -i "s/sdk: '>=2.19.0 <4.0.0'/sdk: '>=3.0.0 <4.0.0'/" pubspec.yaml
+
+          # Modifier l'environnement SDK pour être compatible avec Flutter 3.19.0
+          sed -i "s/sdk: '>=2.19.0 <4.0.0'/sdk: '>=3.2.0 <4.0.0'/" pubspec.yaml
+
+          # Afficher le contenu modifié
+          echo "Contenu du pubspec.yaml modifié:"
           cat pubspec.yaml
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Modify AndroidManifest.xml to fix embedding version
+      - name: Fix Android project structure
         run: |
-          echo "Vérification de la structure des fichiers Android"
-          find android -name "AndroidManifest.xml" -type f
+          echo "Mise à jour de la structure du projet Android pour la compatibilité"
 
-          # Assurez-vous que le répertoire existe
-          mkdir -p android/app/src/main
+          # Sauvegarde du code et des ressources existants
+          echo "Sauvegarde des fichiers importants..."
+          mkdir -p /tmp/backup
+          cp -r lib /tmp/backup/
+          cp -r assets /tmp/backup/
+          cp pubspec.yaml /tmp/backup/
 
-          # Vérifie si nous avons besoin de créer le fichier à la racine Android
-          if [ ! -f "android/AndroidManifest.xml" ]; then
-            echo "Création d'un fichier AndroidManifest.xml à la racine Android pour éviter l'erreur d'embedding v1"
-            cp android/app/src/main/AndroidManifest.xml android/AndroidManifest.xml
-            echo "Fichier copié avec succès"
-            ls -la android/
+          # Créer un nouveau projet temporaire avec la structure correcte
+          echo "Création d'un nouveau projet Flutter avec la structure à jour..."
+          cd ..
+          flutter create --project-name collecte --org com.foodguess temporary_project
+
+          # Restaurer les fichiers de l'ancien projet dans le nouveau
+          echo "Restauration du code et des ressources dans le nouveau projet..."
+          rm -rf temporary_project/lib
+          cp -r /tmp/backup/lib temporary_project/
+          cp -r /tmp/backup/assets temporary_project/
+          cp /tmp/backup/pubspec.yaml temporary_project/
+
+          # Remplacer l'ancien projet par le nouveau
+          echo "Remplacement de l'ancien projet par le nouveau..."
+          cp -r temporary_project/android/* collecte/android/
+
+          # Revenir au dossier du projet
+          cd collecte
+
+          echo "Structure du projet Android mise à jour"
+          ls -la android/
+
+      - name: Update Android configuration
+        run: |
+          echo "Mise à jour de la configuration Android"
+
+          # Assurer la compatibilité des fichiers de configuration
+          echo "android.useAndroidX=true" >> android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
+
+          # Vérifier que le fichier AndroidManifest.xml existe et contient l'embedding v2
+          if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
+            echo "AndroidManifest.xml trouvé, vérification de la configuration d'embedding..."
+            
+            # Assurer que le fichier contient la métadonnée flutterEmbedding
+            if ! grep -q "flutterEmbedding" android/app/src/main/AndroidManifest.xml; then
+              echo "Ajout de la métadonnée flutterEmbedding..."
+              sed -i '/<\/application>/i \        <meta-data android:name="flutterEmbedding" android:value="2" \/>' android/app/src/main/AndroidManifest.xml
+            fi
+          else
+            echo "ERREUR: AndroidManifest.xml non trouvé!"
           fi
 
-          # Ajout de la propriété flutterEmbedding dans le fichier gradle.properties
-          echo "Ajouter les propriétés d'embedding v2 dans gradle.properties"
-          echo "android.enableJetifier=true" >> android/gradle.properties
-          echo "android.useAndroidX=true" >> android/gradle.properties
-          echo "flutter.buildMode=release" >> android/gradle.properties
-          echo "flutter.versionName=$(grep -m 1 "version:" pubspec.yaml | awk '{print $2}' | cut -d '+' -f1)" >> android/gradle.properties
-          cat android/gradle.properties
+          # Afficher la structure mise à jour
+          echo "Affichage du contenu de AndroidManifest.xml:"
+          cat android/app/src/main/AndroidManifest.xml
+
+          echo "Configuration Android mise à jour"
 
       - name: Build release for Android
-        run: flutter build apk --release --verbose
+        run: flutter build apk --release
 
       - name: Prepare Android APK for release
         run: |
@@ -183,6 +233,10 @@ jobs:
 
             ## Notes de version
             _Consultez l'historique des commits pour plus de détails sur les changements apportés._
+
+            ## Informations techniques
+            - Date de construction: ${{ github.event.repository.updated_at }}
+            - Flutter: 3.19.0 (stable)
           files: |
             release-assets/foodguess-${{ needs.check_merge_from_dev.outputs.version }}.apk
             release-assets/foodguess-web-${{ needs.check_merge_from_dev.outputs.version }}.zip
