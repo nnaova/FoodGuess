@@ -93,7 +93,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.13.0"
+          flutter-version: "3.16.9"
           channel: "stable"
 
       # Modification temporaire du pubspec.yaml pour la compatibilité
@@ -103,13 +103,39 @@ jobs:
           sed -i 's/cupertino_icons: \^1.0.8/cupertino_icons: \^1.0.2/' pubspec.yaml
           sed -i 's/uuid: \^4.4.1/uuid: \^3.0.7/' pubspec.yaml
           sed -i 's/provider: \^6.1.2/provider: \^6.0.5/' pubspec.yaml
+          # Modifier l'environnement SDK pour être compatible avec Flutter 3.16.9
+          sed -i "s/sdk: '>=2.19.0 <4.0.0'/sdk: '>=3.0.0 <4.0.0'/" pubspec.yaml
           cat pubspec.yaml
 
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Modify AndroidManifest.xml to fix embedding version
+        run: |
+          echo "Vérification de la structure des fichiers Android"
+          find android -name "AndroidManifest.xml" -type f
+
+          # Assurez-vous que le répertoire existe
+          mkdir -p android/app/src/main
+
+          # Vérifie si nous avons besoin de créer le fichier à la racine Android
+          if [ ! -f "android/AndroidManifest.xml" ]; then
+            echo "Création d'un fichier AndroidManifest.xml à la racine Android pour éviter l'erreur d'embedding v1"
+            cp android/app/src/main/AndroidManifest.xml android/AndroidManifest.xml
+            echo "Fichier copié avec succès"
+            ls -la android/
+          fi
+
+          # Ajout de la propriété flutterEmbedding dans le fichier gradle.properties
+          echo "Ajouter les propriétés d'embedding v2 dans gradle.properties"
+          echo "android.enableJetifier=true" >> android/gradle.properties
+          echo "android.useAndroidX=true" >> android/gradle.properties
+          echo "flutter.buildMode=release" >> android/gradle.properties
+          echo "flutter.versionName=$(grep -m 1 'version:' pubspec.yaml | awk '{print $2}' | cut -d '+' -f1)" >> android/gradle.properties
+          cat android/gradle.properties
+
       - name: Build release for Android
-        run: flutter build apk --release
+        run: flutter build apk --release --verbose
 
       - name: Prepare Android APK for release
         run: |
