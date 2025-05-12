@@ -58,14 +58,35 @@ jobs:
       - name: Build release for Android
         run: flutter build apk --release
 
+      - name: Prepare Android APK for release
+        run: |
+          mkdir -p release-assets
+          # Vérifie d'abord si l'APK existe au chemin standard
+          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+            cp build/app/outputs/flutter-apk/app-release.apk release-assets/foodguess-${{ needs.check_merge_from_dev.outputs.version }}.apk
+            echo "APK trouvé et copié vers release-assets/"
+          else
+            # Recherche l'APK dans le répertoire des sorties
+            APK_PATH=$(find build/ -name "*.apk" -type f | head -n 1)
+            if [ -n "$APK_PATH" ]; then
+              cp "$APK_PATH" release-assets/foodguess-${{ needs.check_merge_from_dev.outputs.version }}.apk
+              echo "APK trouvé à $APK_PATH et copié vers release-assets/"
+            else
+              echo "ERREUR: Impossible de trouver l'APK. La compilation a peut-être échoué."
+              exit 1
+            fi
+          fi
+          ls -la release-assets/
+
       - name: Build release for Web
         run: flutter build web --release
 
       - name: Zip Web Build
         run: |
           cd build/web
-          zip -r ../../foodguess-web-${{ needs.check_merge_from_dev.outputs.version }}.zip .
+          zip -r ../../release-assets/foodguess-web-${{ needs.check_merge_from_dev.outputs.version }}.zip .
           cd ../..
+          ls -la release-assets/
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -78,14 +99,14 @@ jobs:
             Cette version est automatiquement publiée suite au merge de la branche `dev` vers `main`.
 
             ## Téléchargements
-            - Application Android (APK)
-            - Version Web (ZIP)
+            - [📱 Application Android (APK)](foodguess-${{ needs.check_merge_from_dev.outputs.version }}.apk)
+            - [🌐 Version Web (ZIP)](foodguess-web-${{ needs.check_merge_from_dev.outputs.version }}.zip)
 
             ## Notes de version
             _Consultez l'historique des commits pour plus de détails sur les changements apportés._
           files: |
-            build/app/outputs/flutter-apk/app-release.apk
-            foodguess-web-${{ needs.check_merge_from_dev.outputs.version }}.zip
+            release-assets/foodguess-${{ needs.check_merge_from_dev.outputs.version }}.apk
+            release-assets/foodguess-web-${{ needs.check_merge_from_dev.outputs.version }}.zip
           draft: false
           prerelease: false
         env:

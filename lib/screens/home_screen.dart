@@ -61,24 +61,51 @@ class HomeScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Logo ludique avec panier et aliments
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildAnimatedFoodIcon(
-                Icons.shopping_basket_rounded,
-                65,
-                Theme.of(context).colorScheme.secondary,
-              ),
-              const SizedBox(width: 5),
-              _buildAnimatedFoodIcon(Icons.egg_alt_rounded, 40, Colors.white),
-              _buildAnimatedFoodIcon(
-                Icons.apple,
-                45,
+          // Logo de l'application
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
                 // ignore: deprecated_member_use
-                Theme.of(context).colorScheme.secondary.withOpacity(0.9),
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(16),
               ),
-            ],
+              child: Image.asset(
+                'assets/logo_collecte.png',
+                width: 100,
+                height: 100,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  // Fallback au cas où le logo n'est pas trouvé
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildAnimatedFoodIcon(
+                        Icons.shopping_basket_rounded,
+                        65,
+                        Theme.of(context).colorScheme.secondary,
+                      ),
+                      const SizedBox(width: 5),
+                      _buildAnimatedFoodIcon(
+                        Icons.egg_alt_rounded,
+                        40,
+                        Colors.white,
+                      ),
+                      _buildAnimatedFoodIcon(
+                        Icons.apple,
+                        45,
+                        // ignore: deprecated_member_use
+                        Theme.of(
+                          context,
+                        // ignore: deprecated_member_use
+                        ).colorScheme.secondary.withOpacity(0.9),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
           const SizedBox(height: 20),
 
@@ -100,12 +127,19 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           // Description du jeu
-          Text(
-            'Parie sur les aliments de la prochaine collecte !',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
+          SizedBox(
+            width: MediaQuery.of(context).size.width * 0.8,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                'Parie sur les aliments de la prochaine collecte !',
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ),
         ],
@@ -287,13 +321,68 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 const Divider(),
                 const SizedBox(height: 8),
-                _buildCreditRow(
-                  context,
-                  'Concept & Design',
-                  'Alexandre Giordana',
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircleAvatar(
+                            radius: 24,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            child: const Text(
+                              'AG',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Alexandre Giordana',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Concept, Design & Développement',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Création: 2025',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                _buildCreditRow(context, 'Développement', 'Alexandre Giordana'),
-                _buildCreditRow(context, 'Création', '2025'),
                 const SizedBox(height: 8),
                 const Divider(),
                 const SizedBox(height: 16),
@@ -314,28 +403,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Ligne d'information pour les crédits
-  Widget _buildCreditRow(BuildContext context, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            '$label: ',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[700],
-            ),
-          ),
-          Text(value, style: const TextStyle(fontSize: 14)),
-        ],
-      ),
-    );
-  }
-
-  // Icône de réseau social pour les crédits
+  // Carte de jeu
   // Carte de jeu
   Widget _buildPlayCard(
     BuildContext context, {
