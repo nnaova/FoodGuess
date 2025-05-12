@@ -93,8 +93,17 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.10.0"
+          flutter-version: "3.13.0"
           channel: "stable"
+
+      # Modification temporaire du pubspec.yaml pour la compatibilité
+      - name: Ajuster les dépendances pour la compatibilité
+        run: |
+          sed -i 's/flutter_lints: \^5.0.0/flutter_lints: \^2.0.0/' pubspec.yaml
+          sed -i 's/cupertino_icons: \^1.0.8/cupertino_icons: \^1.0.2/' pubspec.yaml
+          sed -i 's/uuid: \^4.4.1/uuid: \^3.0.7/' pubspec.yaml
+          sed -i 's/provider: \^6.1.2/provider: \^6.0.5/' pubspec.yaml
+          cat pubspec.yaml
 
       - name: Install dependencies
         run: flutter pub get
