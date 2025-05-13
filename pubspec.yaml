@@ -97,6 +97,9 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/logo_foodguess.png"
+  adaptive_icon_background: "#FFFFFF" # Fond blanc pour l'icône adaptative
+  adaptive_icon_foreground: "assets/logo_foodguess.png" # Premier plan de l'icône adaptative
+  min_sdk_android: 21 # Version minimale pour les icônes adaptatives
   web:
     generate: true
     image_path: "assets/logo_foodguess.png"
