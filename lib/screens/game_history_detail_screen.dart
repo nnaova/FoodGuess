@@ -110,9 +110,7 @@ class GameHistoryDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${entry.players.length} joueurs ${entry.status == GameHistoryStatus.completed
-                    ? '· ${entry.scoringItems.length} éléments gagnants'
-                    : ''}',
+            '${entry.players.length} joueurs ${entry.status == GameHistoryStatus.completed ? '· ${entry.scoringItems.length} éléments gagnants' : ''}',
             style: const TextStyle(color: Colors.white),
           ),
 
@@ -389,10 +387,22 @@ class GameHistoryDetailScreen extends StatelessWidget {
       case GameHistoryStatus.completed:
         return Icons.star;
     }
-  }
+  } // Continuer une partie non terminée
 
-  // Continuer une partie non terminée
   void _continueGame(BuildContext context) {
+    // Ne rien faire si la partie est déjà terminée
+    if (entry.status == GameHistoryStatus.completed) {
+      // Informer l'utilisateur que cette partie est déjà terminée
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Cette partie est déjà terminée et ne peut plus être modifiée.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     // Convertir l'entrée d'historique en objet Game actif
     final game = entry.toGame();
 

@@ -21,6 +21,11 @@ class _GameResultsScreenState extends State<GameResultsScreen> {
   @override
   void initState() {
     super.initState();
+    // S'assurer que l'état du jeu est bien marqué comme terminé
+    if (widget.game.state != GameState.finished) {
+      widget.game.state = GameState.finished;
+    }
+
     _saveToHistory();
   }
 

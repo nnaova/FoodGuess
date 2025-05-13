@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async'; // Import pour utiliser Timer
 import '../models/game.dart';
 import '../models/bet_item.dart';
 import '../services/game_history_storage.dart'; // Import du service de stockage
@@ -42,6 +43,14 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
 
   @override
   void dispose() {
+    // Annuler le timer s'il est actif
+    _saveDebounceTimer?.cancel();
+
+    // Sauvegarder l'état actuel avant de quitter
+    if (_game.state == GameState.playing) {
+      // Sauvegarde synchrone pour s'assurer qu'elle se produit avant de quitter
+      _saveGameInProgress();
+    }
     _searchController.dispose();
     super.dispose();
   }
@@ -62,6 +71,9 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
     });
   }
 
+  // Timer pour éviter de sauvegarder trop souvent
+  Timer? _saveDebounceTimer;
+
   void _placeBet(String betItemId) {
     setState(() {
       _game.placeBet(betItemId);
@@ -74,8 +86,14 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
     if (_game.state == GameState.scoring) {
       _navigateToScoringScreen();
     } else {
-      // Sauvegarder la partie en cours
-      _saveGameInProgress();
+      // Annuler le timer précédent s'il existe
+      _saveDebounceTimer?.cancel();
+
+      // Créer un nouveau timer qui sauvegarde après un délai
+      _saveDebounceTimer = Timer(const Duration(seconds: 1), () {
+        // Sauvegarder la partie en cours
+        _saveGameInProgress();
+      });
     }
   }
 
@@ -109,9 +127,35 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
   }
 
   Future<void> _saveGameInProgress() async {
-    // La méthode saveGameInProgress retourne un Future<String>
-    _gameId =
-        await _historyStorage.saveGameInProgress(_game, existingId: _gameId);
+    try {
+      // La méthode saveGameInProgress retourne un Future<String>
+      _gameId =
+          await _historyStorage.saveGameInProgress(_game, existingId: _gameId);
+
+      if (mounted) {
+        // Feedback visuel discret pour indiquer que la sauvegarde a été faite
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Pari sauvegardé automatiquement'),
+            duration: Duration(seconds: 1),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      // En cas d'erreur, on affiche un message mais on ne bloque pas l'utilisateur
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors de la sauvegarde du pari'),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
