@@ -113,6 +113,7 @@ jobs:
           sed -i 's/cupertino_icons: \^1.0.8/cupertino_icons: \^1.0.2/' pubspec.yaml
           sed -i 's/uuid: \^4.4.1/uuid: \^3.0.7/' pubspec.yaml
           sed -i 's/provider: \^6.1.2/provider: \^6.0.5/' pubspec.yaml
+          sed -i 's/flutter_launcher_icons: \^0.14.0/flutter_launcher_icons: \^0.13.1/' pubspec.yaml
 
           # Modifier l'environnement SDK pour être compatible avec Flutter 3.19.0
           sed -i "s/sdk: '>=2.19.0 <4.0.0'/sdk: '>=3.2.0 <4.0.0'/" pubspec.yaml
@@ -138,7 +139,7 @@ jobs:
           # Créer un nouveau projet temporaire avec la structure correcte
           echo "Création d'un nouveau projet Flutter avec la structure à jour..."
           cd ..
-          flutter create --project-name FoodGuess --org com.foodguess temporary_project
+          flutter create --project-name food_guess --org com.example.foodguess temporary_project
 
           # Restaurer les fichiers de l'ancien projet dans le nouveau
           echo "Restauration du code et des ressources dans le nouveau projet..."
@@ -149,10 +150,10 @@ jobs:
 
           # Remplacer l'ancien projet par le nouveau
           echo "Remplacement de l'ancien projet par le nouveau..."
-          cp -r temporary_project/android/* FoodGuess/android/
+          cp -r temporary_project/android/* food_guess/android/
 
           # Revenir au dossier du projet
-          cd FoodGuess
+          cd food_guess
 
           echo "Structure du projet Android mise à jour"
           ls -la android/
@@ -190,21 +191,41 @@ jobs:
       - name: Prepare Android APK for release
         run: |
           mkdir -p release-assets
-          # Vérifie d'abord si l'APK existe au chemin standard
-          if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
-            cp build/app/outputs/flutter-apk/app-release.apk release-assets/foodguess-${{ needs.check_merge_from_dev.outputs.version }}.apk
-            echo "APK trouvé et copié vers release-assets/"
-          else
-            # Recherche l'APK dans le répertoire des sorties
-            APK_PATH=$(find build/ -name "*.apk" -type f | head -n 1)
+          # Rechercher l'APK dans différents chemins possibles selon la structure du projet
+          echo "Recherche de l'APK..."
+
+          # Chemins possibles pour l'APK
+          APK_PATHS=(
+            "build/app/outputs/flutter-apk/app-release.apk"
+            "build/outputs/flutter-apk/app-release.apk"
+            "build/app/outputs/apk/release/app-release.apk"
+          )
+
+          APK_FOUND=false
+          for path in "${APK_PATHS[@]}"; do
+            if [ -f "$path" ]; then
+              cp "$path" release-assets/foodguess-${{ needs.check_merge_from_dev.outputs.version }}.apk
+              echo "APK trouvé à $path et copié vers release-assets/"
+              APK_FOUND=true
+              break
+            fi
+          done
+
+          # Si aucun chemin connu n'est trouvé, rechercher dans tout le répertoire build
+          if [ "$APK_FOUND" = false ]; then
+            echo "Recherche approfondie de l'APK..."
+            APK_PATH=$(find build/ -name "*release*.apk" -type f | head -n 1)
             if [ -n "$APK_PATH" ]; then
               cp "$APK_PATH" release-assets/foodguess-${{ needs.check_merge_from_dev.outputs.version }}.apk
               echo "APK trouvé à $APK_PATH et copié vers release-assets/"
             else
               echo "ERREUR: Impossible de trouver l'APK. La compilation a peut-être échoué."
+              echo "Contenu du répertoire build:"
+              find build/ -type f -name "*.apk" | sort
               exit 1
             fi
           fi
+
           ls -la release-assets/
 
       - name: Build release for Web
@@ -237,6 +258,7 @@ jobs:
             ## Informations techniques
             - Date de construction: ${{ github.event.repository.updated_at }}
             - Flutter: 3.19.0 (stable)
+            - Version: ${{ needs.check_merge_from_dev.outputs.version }}
           files: |
             release-assets/foodguess-${{ needs.check_merge_from_dev.outputs.version }}.apk
             release-assets/foodguess-web-${{ needs.check_merge_from_dev.outputs.version }}.zip
