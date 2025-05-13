@@ -57,7 +57,18 @@ class GameHistoryDetailScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Icon(Icons.emoji_events, size: 60, color: Colors.amber),
+          // Icône différente selon le statut de la partie
+          Icon(
+            entry.status == GameHistoryStatus.completed
+                ? Icons.emoji_events
+                : (entry.status == GameHistoryStatus.waitingResults
+                    ? Icons.pending_actions
+                    : Icons.sports_esports),
+            size: 60,
+            color: entry.status == GameHistoryStatus.completed
+                ? Colors.amber
+                : Colors.white,
+          ),
           const SizedBox(height: 10),
           Text(
             'Partie du ${entry.formattedDate}',
@@ -68,22 +79,27 @@ class GameHistoryDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 5),
+          // Badge de statut
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              // ignore: deprecated_member_use
-              color: Colors.amber.withOpacity(0.8),
+              color: _getStatusColor(entry.status),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.star, color: Colors.white),
+                Icon(
+                  _getStatusIcon(entry.status),
+                  color: Colors.white,
+                ),
                 const SizedBox(width: 5),
                 Text(
-                  entry.isTie
-                      ? 'Égalité: ${entry.winnerName}'
-                      : 'Gagnant: ${entry.winnerName}',
+                  entry.status == GameHistoryStatus.completed
+                      ? (entry.isTie
+                          ? 'Égalité: ${entry.winnerName}'
+                          : 'Gagnant: ${entry.winnerName}')
+                      : entry.statusText,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -94,9 +110,27 @@ class GameHistoryDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${entry.players.length} joueurs · ${entry.scoringItems.length} éléments gagnants',
+            '${entry.players.length} joueurs ${entry.status == GameHistoryStatus.completed
+                    ? '· ${entry.scoringItems.length} éléments gagnants'
+                    : ''}',
             style: const TextStyle(color: Colors.white),
           ),
+
+          // Bouton pour continuer une partie non terminée
+          if (entry.status != GameHistoryStatus.completed)
+            Padding(
+              padding: const EdgeInsets.only(top: 16.0),
+              child: ElevatedButton.icon(
+                onPressed: () => _continueGame(context),
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Continuer la partie'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                  elevation: 3,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -182,22 +216,20 @@ class GameHistoryDetailScreen extends StatelessWidget {
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color:
-              isWinner
-                  // ignore: deprecated_member_use
-                  ? Colors.amber.withOpacity(0.2)
-                  // ignore: deprecated_member_use
-                  : Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          color: isWinner
+              // ignore: deprecated_member_use
+              ? Colors.amber.withOpacity(0.2)
+              // ignore: deprecated_member_use
+              : Theme.of(context).colorScheme.primary.withOpacity(0.1),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
           '${player.score} pts',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color:
-                isWinner
-                    ? Colors.amber[900]
-                    : Theme.of(context).colorScheme.primary,
+            color: isWinner
+                ? Colors.amber[900]
+                : Theme.of(context).colorScheme.primary,
           ),
         ),
       ),
@@ -216,35 +248,31 @@ class GameHistoryDetailScreen extends StatelessWidget {
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
-                  children:
-                      player.betItemIds.map((itemId) {
-                        final item = _findBetItem(itemId);
-                        final isScoring = item?.isScoring ?? false;
+                  children: player.betItemIds.map((itemId) {
+                    final item = _findBetItem(itemId);
+                    final isScoring = item?.isScoring ?? false;
 
-                        return Chip(
-                          backgroundColor:
-                              isScoring ? Colors.green[100] : Colors.grey[100],
-                          label: Text(
-                            item?.name != null
-                                ? "${item!.name} (${item.points} pt${item.points > 1 ? 's' : ''})"
-                                : 'Élément inconnu',
-                            style: TextStyle(
-                              color:
-                                  isScoring
-                                      ? Colors.green[800]
-                                      : Colors.grey[800],
-                              fontWeight: isScoring ? FontWeight.w500 : null,
-                            ),
-                          ),
-                          avatar:
-                              isScoring
-                                  ? const Icon(
-                                    Icons.check_circle,
-                                    color: Colors.green,
-                                  )
-                                  : const Icon(Icons.cancel, color: Colors.red),
-                        );
-                      }).toList(),
+                    return Chip(
+                      backgroundColor:
+                          isScoring ? Colors.green[100] : Colors.grey[100],
+                      label: Text(
+                        item?.name != null
+                            ? "${item!.name} (${item.points} pt${item.points > 1 ? 's' : ''})"
+                            : 'Élément inconnu',
+                        style: TextStyle(
+                          color:
+                              isScoring ? Colors.green[800] : Colors.grey[800],
+                          fontWeight: isScoring ? FontWeight.w500 : null,
+                        ),
+                      ),
+                      avatar: isScoring
+                          ? const Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                            )
+                          : const Icon(Icons.cancel, color: Colors.red),
+                    );
+                  }).toList(),
                 ),
               ],
             ),
@@ -276,49 +304,47 @@ class GameHistoryDetailScreen extends StatelessWidget {
         const Divider(),
         Padding(
           padding: const EdgeInsets.all(16.0),
-          child:
-              entry.scoringItems.isEmpty
-                  ? const Center(
-                    child: Text(
-                      'Aucun élément gagnant pour cette partie',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  )
-                  : Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children:
-                        entry.scoringItems.map((item) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green[100],
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.check_circle,
-                                  color: Colors.green,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  "${item.name} (${item.points} pt${item.points > 1 ? 's' : ''})",
-                                  style: TextStyle(
-                                    color: Colors.green[800],
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
+          child: entry.scoringItems.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Aucun élément gagnant pour cette partie',
+                    style: TextStyle(color: Colors.grey),
                   ),
+                )
+              : Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: entry.scoringItems.map((item) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green[100],
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            "${item.name} (${item.points} pt${item.points > 1 ? 's' : ''})",
+                            style: TextStyle(
+                              color: Colors.green[800],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
         ),
       ],
     );
@@ -337,6 +363,60 @@ class GameHistoryDetailScreen extends StatelessWidget {
         // Si toujours pas trouvé (pour la rétrocompatibilité avec les anciennes parties)
         return BetItem(id: itemId, name: 'Élément #$itemId', isScoring: false);
       }
+    }
+  }
+
+  // Obtenir la couleur en fonction du statut de la partie
+  Color _getStatusColor(GameHistoryStatus status) {
+    switch (status) {
+      case GameHistoryStatus.inProgress:
+        return Colors.blue;
+      case GameHistoryStatus.waitingResults:
+        return Colors.orange;
+      case GameHistoryStatus.completed:
+        // ignore: deprecated_member_use
+        return Colors.amber.withOpacity(0.8);
+    }
+  }
+
+  // Obtenir l'icône en fonction du statut de la partie
+  IconData _getStatusIcon(GameHistoryStatus status) {
+    switch (status) {
+      case GameHistoryStatus.inProgress:
+        return Icons.sports_esports;
+      case GameHistoryStatus.waitingResults:
+        return Icons.pending_actions;
+      case GameHistoryStatus.completed:
+        return Icons.star;
+    }
+  }
+
+  // Continuer une partie non terminée
+  void _continueGame(BuildContext context) {
+    // Convertir l'entrée d'historique en objet Game actif
+    final game = entry.toGame();
+
+    // Naviguer vers l'écran approprié en fonction du statut
+    if (entry.status == GameHistoryStatus.inProgress) {
+      // Aller à l'écran de jeu
+      Navigator.pushNamed(
+        context,
+        '/game-play',
+        arguments: {
+          'game': game,
+          'gameId': entry.id,
+        },
+      );
+    } else if (entry.status == GameHistoryStatus.waitingResults) {
+      // Aller à l'écran de scoring
+      Navigator.pushNamed(
+        context,
+        '/game-scoring',
+        arguments: {
+          'game': game,
+          'gameId': entry.id,
+        },
+      );
     }
   }
 }

@@ -4,8 +4,9 @@ import '../models/bet_item.dart';
 
 class GameScoringScreen extends StatefulWidget {
   final Game game;
+  final String? gameId; // ID de la partie en cours
 
-  const GameScoringScreen({super.key, required this.game});
+  const GameScoringScreen({super.key, required this.game, this.gameId});
 
   @override
   State<GameScoringScreen> createState() => _GameScoringScreenState();
@@ -33,14 +34,21 @@ class _GameScoringScreenState extends State<GameScoringScreen> {
 
   void _finishGame() {
     // Récupérer les éléments sélectionnés
-    final scoringItems =
-        _game.availableBetItems
-            .where((item) => _selectedItemIds.contains(item.id))
-            .toList();
+    final scoringItems = _game.availableBetItems
+        .where((item) => _selectedItemIds.contains(item.id))
+        .toList();
 
     _game.setScoringItems(scoringItems);
 
-    Navigator.pushReplacementNamed(context, '/game-results', arguments: _game);
+    // Passer le jeu et l'ID à l'écran des résultats
+    Navigator.pushReplacementNamed(
+      context,
+      '/game-results',
+      arguments: {
+        'game': _game,
+        'gameId': widget.gameId,
+      },
+    );
   }
 
   @override
@@ -77,10 +85,9 @@ class _GameScoringScreenState extends State<GameScoringScreen> {
 
                 return Card(
                   elevation: 4,
-                  color:
-                      isSelected
-                          ? Theme.of(context).colorScheme.primaryContainer
-                          : null,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : null,
                   child: InkWell(
                     onTap: () => _toggleItemSelection(item),
                     child: Padding(
@@ -93,11 +100,10 @@ class _GameScoringScreenState extends State<GameScoringScreen> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color:
-                                  isSelected
-                                      ? Colors
-                                          .white // Couleur blanche pour un meilleur contraste
-                                      : null,
+                              color: isSelected
+                                  ? Colors
+                                      .white // Couleur blanche pour un meilleur contraste
+                                  : null,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -107,10 +113,9 @@ class _GameScoringScreenState extends State<GameScoringScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color:
-                                  isSelected
-                                      ? Colors.green[700]
-                                      : Colors.grey[600],
+                              color: isSelected
+                                  ? Colors.green[700]
+                                  : Colors.grey[600],
                             ),
                           ),
                           if (item.description.isNotEmpty)
@@ -120,12 +125,11 @@ class _GameScoringScreenState extends State<GameScoringScreen> {
                                 item.description,
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color:
-                                      isSelected
-                                          ? Theme.of(
-                                            context,
-                                          ).colorScheme.primary
-                                          : null,
+                                  color: isSelected
+                                      ? Theme.of(
+                                          context,
+                                        ).colorScheme.primary
+                                      : null,
                                 ),
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
