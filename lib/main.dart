@@ -133,29 +133,60 @@ class _MyAppState extends State<MyApp> {
           // Recharger les éléments pariables avant de configurer une partie
           _loadBetItems();
           return MaterialPageRoute(
-            builder:
-                (context) =>
-                    _isLoading
-                        ? const Scaffold(
-                          body: Center(child: CircularProgressIndicator()),
-                        )
-                        : GameSetupScreen(availableBetItems: _betItems),
+            builder: (context) => _isLoading
+                ? const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  )
+                : GameSetupScreen(availableBetItems: _betItems),
           );
         } else if (settings.name == '/game-play') {
-          final game = settings.arguments as Game;
-          return MaterialPageRoute(
-            builder: (context) => GamePlayScreen(game: game),
-          );
+          // Le jeu peut être passé directement ou avec un ID de partie existante
+          if (settings.arguments is Game) {
+            final game = settings.arguments as Game;
+            return MaterialPageRoute(
+              builder: (context) => GamePlayScreen(game: game),
+            );
+          } else if (settings.arguments is Map) {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => GamePlayScreen(
+                game: args['game'] as Game,
+                gameId: args['gameId'] as String?,
+              ),
+            );
+          }
         } else if (settings.name == '/game-scoring') {
-          final game = settings.arguments as Game;
-          return MaterialPageRoute(
-            builder: (context) => GameScoringScreen(game: game),
-          );
+          // Accepter soit un Game, soit un Map avec game et gameId
+          if (settings.arguments is Game) {
+            final game = settings.arguments as Game;
+            return MaterialPageRoute(
+              builder: (context) => GameScoringScreen(game: game),
+            );
+          } else if (settings.arguments is Map) {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => GameScoringScreen(
+                game: args['game'] as Game,
+                gameId: args['gameId'] as String?,
+              ),
+            );
+          }
         } else if (settings.name == '/game-results') {
-          final game = settings.arguments as Game;
-          return MaterialPageRoute(
-            builder: (context) => GameResultsScreen(game: game),
-          );
+          // Accepter soit un Game, soit un Map avec game et gameId
+          if (settings.arguments is Game) {
+            final game = settings.arguments as Game;
+            return MaterialPageRoute(
+              builder: (context) => GameResultsScreen(game: game),
+            );
+          } else if (settings.arguments is Map) {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => GameResultsScreen(
+                game: args['game'] as Game,
+                gameId: args['gameId'] as String?,
+              ),
+            );
+          }
         } else if (settings.name == '/game-history-detail') {
           final entry = settings.arguments as GameHistoryEntry;
           return MaterialPageRoute(

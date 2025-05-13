@@ -42,31 +42,54 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
   Future<void> _clearHistory() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder:
-          (ctx) => AlertDialog(
-            title: const Text('Effacer l\'historique'),
-            content: const Text(
-              'Êtes-vous sûr de vouloir effacer tout l\'historique des parties ?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Annuler'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text(
-                  'Effacer',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            ],
+      builder: (ctx) => AlertDialog(
+        title: const Text('Effacer l\'historique'),
+        content: const Text(
+          'Êtes-vous sûr de vouloir effacer tout l\'historique des parties ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Annuler'),
           ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              'Effacer',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
     );
 
     if (confirmed == true) {
       await _historyStorage.clearHistory();
       _loadHistory();
+    }
+  }
+
+  // Obtenir la couleur en fonction du statut de la partie
+  Color _getStatusColor(GameHistoryStatus status) {
+    switch (status) {
+      case GameHistoryStatus.inProgress:
+        return Colors.blue;
+      case GameHistoryStatus.waitingResults:
+        return Colors.orange;
+      case GameHistoryStatus.completed:
+        return Colors.amber;
+    }
+  }
+
+  // Obtenir l'icône en fonction du statut de la partie
+  IconData _getStatusIcon(GameHistoryStatus status) {
+    switch (status) {
+      case GameHistoryStatus.inProgress:
+        return Icons.sports_esports;
+      case GameHistoryStatus.waitingResults:
+        return Icons.pending_actions;
+      case GameHistoryStatus.completed:
+        return Icons.star;
     }
   }
 
@@ -88,10 +111,9 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _loadHistory,
-        child:
-            _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _historyEntries.isEmpty
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _historyEntries.isEmpty
                 ? _buildEmptyHistory()
                 : _buildHistoryList(),
       ),
@@ -152,7 +174,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                     decoration: BoxDecoration(
                       color: Theme.of(
                         context,
-                      // ignore: deprecated_member_use
+                        // ignore: deprecated_member_use
                       ).colorScheme.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(25),
                     ),
@@ -178,17 +200,19 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(
-                              Icons.star,
+                            Icon(
+                              _getStatusIcon(entry.status),
                               size: 16,
-                              color: Colors.amber,
+                              color: _getStatusColor(entry.status),
                             ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                entry.isTie
-                                    ? 'Égalité: ${entry.winnerName}'
-                                    : 'Gagnant: ${entry.winnerName}',
+                                entry.status == GameHistoryStatus.completed
+                                    ? (entry.isTie
+                                        ? 'Égalité: ${entry.winnerName}'
+                                        : 'Gagnant: ${entry.winnerName}')
+                                    : entry.statusText,
                                 style: const TextStyle(fontSize: 14),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -196,7 +220,9 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                           ],
                         ),
                         Text(
-                          'Score: ${entry.winnerScore} pts',
+                          entry.status == GameHistoryStatus.completed
+                              ? 'Score: ${entry.winnerScore} pts'
+                              : '${entry.players.length} joueurs',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.grey[700],

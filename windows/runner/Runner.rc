@@ -1,7 +1,12 @@
 // Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
-#include "resource.h"
+#include "res            VALUE "FileDescription", "FoodGuess" "\0"
+            VALUE "FileVersion", VERSION_AS_STRING "\0"
+            VALUE "InternalName", "FoodGuess" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2023 com.example. All rights reserved." "\0"
+            VALUE "OriginalFilename", "FoodGuess.exe" "\0"
+            VALUE "ProductName", "FoodGuess" "\0"h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -90,12 +95,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "collecte" "\0"
+            VALUE "FileDescription", "FoodGuess" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "collecte" "\0"
+            VALUE "InternalName", "FoodGuess" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "collecte.exe" "\0"
-            VALUE "ProductName", "collecte" "\0"
+            VALUE "OriginalFilename", "FoodGuess.exe" "\0"
+            VALUE "ProductName", "FoodGuess" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

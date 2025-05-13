@@ -9,49 +9,78 @@ import 'package:uuid/uuid.dart';
 class GameHistoryStorage {
   static const String _storageKey = 'game_history';
 
-  // Sauvegarder une partie dans l'historique
-  Future<void> saveGameToHistory(Game game) async {
+  // Sauvegarder une partie en cours dans l'historique (paris en cours)
+  Future<String> saveGameInProgress(Game game, {String? existingId}) async {
+    final id = existingId ?? const Uuid().v4();
+    return _saveGame(game, id, GameHistoryStatus.inProgress);
+  }
+
+  // Sauvegarder une partie en attente des résultats (paris terminés)
+  Future<String> saveGameWaitingResults(Game game, {String? existingId}) async {
+    final id = existingId ?? const Uuid().v4();
+    return _saveGame(game, id, GameHistoryStatus.waitingResults);
+  }
+
+  // Sauvegarder une partie terminée dans l'historique
+  Future<String> saveGameCompleted(Game game, {String? existingId}) async {
+    return _saveGame(
+        game, existingId ?? const Uuid().v4(), GameHistoryStatus.completed);
+  }
+
+  // Méthode privée pour sauvegarder une partie avec un statut spécifique
+  Future<String> _saveGame(
+      Game game, String id, GameHistoryStatus status) async {
     final prefs = await SharedPreferences.getInstance();
     final List<GameHistoryEntry> history = await loadGameHistory();
 
-    // Trier les joueurs par score décroissant
-    final List<Player> sortedPlayers = List.from(game.players)
-      ..sort((a, b) => b.score.compareTo(a.score));
+    // Supprimer l'entrée existante si elle existe déjà (mise à jour)
+    final existingEntryIndex = history.indexWhere((entry) => entry.id == id);
+    if (existingEntryIndex != -1) {
+      history.removeAt(existingEntryIndex);
+    }
 
-    // Vérifier s'il y a égalité pour la première place
+    // Si la partie est terminée, nous avons besoin des informations sur le gagnant
     bool isTie = false;
     String winnerName = 'Aucun gagnant';
     int winnerScore = 0;
+    List<Player> sortedPlayers = List.from(game.players);
 
-    if (sortedPlayers.isNotEmpty) {
-      winnerScore = sortedPlayers[0].score;
+    if (status == GameHistoryStatus.completed) {
+      // Trier les joueurs par score décroissant pour les parties terminées
+      sortedPlayers.sort((a, b) => b.score.compareTo(a.score));
 
-      // Compter combien de joueurs ont le score le plus élevé
-      final tiedPlayers =
-          sortedPlayers.where((player) => player.score == winnerScore).toList();
+      if (sortedPlayers.isNotEmpty) {
+        winnerScore = sortedPlayers[0].score;
 
-      if (tiedPlayers.length > 1) {
-        // Cas d'égalité
-        isTie = true;
-        final names = tiedPlayers.map((p) => p.name).toList();
-        winnerName = names.join(' et '); // Ex: "Alice et Bob"
-      } else {
-        // Cas normal (un seul gagnant)
-        winnerName = sortedPlayers[0].name;
+        // Compter combien de joueurs ont le score le plus élevé
+        final tiedPlayers = sortedPlayers
+            .where((player) => player.score == winnerScore)
+            .toList();
+
+        if (tiedPlayers.length > 1) {
+          // Cas d'égalité
+          isTie = true;
+          final names = tiedPlayers.map((p) => p.name).toList();
+          winnerName = names.join(' et '); // Ex: "Alice et Bob"
+        } else {
+          // Cas normal (un seul gagnant)
+          winnerName = sortedPlayers[0].name;
+        }
       }
     }
 
     // Créer une nouvelle entrée d'historique
     final historyEntry = GameHistoryEntry(
-      id: const Uuid().v4(),
+      id: id,
       dateTime: DateTime.now(),
       players: sortedPlayers,
       scoringItems: game.scoringItems,
-      availableBetItems:
-          game.availableBetItems, // Sauvegarde de tous les éléments disponibles
+      availableBetItems: game.availableBetItems,
       winnerName: winnerName,
       winnerScore: winnerScore,
-      isTie: isTie, // Indiquer s'il y a égalité
+      isTie: isTie,
+      status: status,
+      currentPlayerIndex: game.currentPlayerIndex,
     );
 
     // Ajouter la nouvelle entrée à l'historique
@@ -60,6 +89,13 @@ class GameHistoryStorage {
     // Sauvegarder l'historique mis à jour
     final jsonHistory = history.map((entry) => entry.toJson()).toList();
     await prefs.setString(_storageKey, jsonEncode(jsonHistory));
+
+    return id;
+  }
+
+  // Ancienne méthode maintenue pour la rétrocompatibilité
+  Future<void> saveGameToHistory(Game game) async {
+    await saveGameCompleted(game);
   }
 
   // Charger l'historique des parties

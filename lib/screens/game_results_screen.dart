@@ -6,8 +6,9 @@ import '../services/game_history_storage.dart';
 
 class GameResultsScreen extends StatefulWidget {
   final Game game;
+  final String? gameId; // ID de la partie existante
 
-  const GameResultsScreen({super.key, required this.game});
+  const GameResultsScreen({super.key, required this.game, this.gameId});
 
   @override
   State<GameResultsScreen> createState() => _GameResultsScreenState();
@@ -20,12 +21,24 @@ class _GameResultsScreenState extends State<GameResultsScreen> {
   @override
   void initState() {
     super.initState();
+    // S'assurer que l'état du jeu est bien marqué comme terminé
+    if (widget.game.state != GameState.finished) {
+      widget.game.state = GameState.finished;
+    }
+
     _saveToHistory();
   }
 
   Future<void> _saveToHistory() async {
     if (!_historySaved) {
-      await _historyStorage.saveGameToHistory(widget.game);
+      if (widget.gameId != null) {
+        // Mettre à jour la partie existante avec le statut "completed"
+        await _historyStorage.saveGameCompleted(widget.game,
+            existingId: widget.gameId);
+      } else {
+        // Créer une nouvelle entrée pour la partie terminée
+        await _historyStorage.saveGameCompleted(widget.game);
+      }
       setState(() {
         _historySaved = true;
       });
@@ -76,9 +89,9 @@ class _GameResultsScreenState extends State<GameResultsScreen> {
                       Text(
                         'Éléments qui rapportaient des points:',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                       ),
                       const SizedBox(height: 8),
                       Wrap(
@@ -87,17 +100,15 @@ class _GameResultsScreenState extends State<GameResultsScreen> {
                         children: [
                           for (final item in widget.game.scoringItems)
                             Chip(
-                              backgroundColor:
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.primaryContainer,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.primaryContainer,
                               label: Text(
                                 "${item.name} (${item.points} pt${item.points > 1 ? 's' : ''})",
                                 style: TextStyle(
-                                  color:
-                                      Theme.of(
-                                        context,
-                                      ).colorScheme.onPrimaryContainer,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -145,8 +156,8 @@ class _GameResultsScreenState extends State<GameResultsScreen> {
           ),
           const SizedBox(height: 10),
           FloatingActionButton.extended(
-            onPressed:
-                () => Navigator.popUntil(context, (route) => route.isFirst),
+            onPressed: () =>
+                Navigator.popUntil(context, (route) => route.isFirst),
             heroTag: 'back_to_home',
             label: const Text('Retour à l\'accueil'),
             icon: const Icon(Icons.home),
@@ -188,16 +199,16 @@ class _GameResultsScreenState extends State<GameResultsScreen> {
                   Text(
                     'Gagnant:',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w600,
-                    ),
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
                   Text(
                     winner.name,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: winnerTextColor,
-                    ),
+                          fontWeight: FontWeight.bold,
+                          color: winnerTextColor,
+                        ),
                   ),
                 ],
               ),
@@ -205,9 +216,9 @@ class _GameResultsScreenState extends State<GameResultsScreen> {
             Text(
               '${winner.score} pts',
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: winnerTextColor,
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: winnerTextColor,
+                  ),
             ),
           ],
         ),
@@ -221,10 +232,9 @@ class _GameResultsScreenState extends State<GameResultsScreen> {
     BuildContext context,
   ) {
     // Trouver les éléments sur lesquels ce joueur a parié
-    final List<BetItem> playerBetItems =
-        widget.game.availableBetItems
-            .where((item) => player.betItemIds.contains(item.id))
-            .toList();
+    final List<BetItem> playerBetItems = widget.game.availableBetItems
+        .where((item) => player.betItemIds.contains(item.id))
+        .toList();
 
     final isTie =
         index > 0 && widget.game.players[index - 1].score == player.score;
@@ -283,9 +293,9 @@ class _GameResultsScreenState extends State<GameResultsScreen> {
                 Text(
                   'Éléments choisis:',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                 ),
                 const SizedBox(height: 8),
                 Wrap(
@@ -294,27 +304,24 @@ class _GameResultsScreenState extends State<GameResultsScreen> {
                   children: [
                     for (final item in playerBetItems)
                       Chip(
-                        backgroundColor:
-                            item.isScoring
-                                ? Colors.green[100]
-                                : Colors.grey[100],
+                        backgroundColor: item.isScoring
+                            ? Colors.green[100]
+                            : Colors.grey[100],
                         label: Text(
                           "${item.name} (${item.points} pt${item.points > 1 ? 's' : ''})",
                           style: TextStyle(
-                            color:
-                                item.isScoring
-                                    ? Colors.green[800]
-                                    : Colors.grey[800],
+                            color: item.isScoring
+                                ? Colors.green[800]
+                                : Colors.grey[800],
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        avatar:
-                            item.isScoring
-                                ? const Icon(
-                                  Icons.check_circle,
-                                  color: Colors.green,
-                                )
-                                : const Icon(Icons.cancel, color: Colors.red),
+                        avatar: item.isScoring
+                            ? const Icon(
+                                Icons.check_circle,
+                                color: Colors.green,
+                              )
+                            : const Icon(Icons.cancel, color: Colors.red),
                       ),
                   ],
                 ),

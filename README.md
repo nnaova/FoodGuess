@@ -1,6 +1,6 @@
 # FoodGuess
 
-FoodGuess est une application ludique qui permet de parier sur les aliments qui seront présents lors d'une prochaine collecte alimentaire.
+FoodGuess est une application ludique qui permet de parier sur les aliments qui seront présents lors d'un prochain arrivage alimentaire.
 
 ## Fonctionnalités
 
@@ -17,7 +17,7 @@ FoodGuess est une application ludique qui permet de parier sur les aliments qui 
 3. Ajoutez des joueurs dans la section "Joueurs"
 4. Démarrez une nouvelle partie et sélectionnez les joueurs participants
 5. Chaque joueur choisit à son tour un aliment sur lequel parier
-6. À la fin, sélectionnez les aliments qui étaient réellement présents lors de la collecte
+6. À la fin, sélectionnez les aliments qui étaient réellement présents lors de l'arrivage
 7. Les joueurs marquent des points pour chaque prédiction correcte selon la valeur en points de l'aliment
 
 ## Installation et développement
