@@ -7,6 +7,13 @@ on:
     paths-ignore:
       - "**.md"
 
+# Définition des permissions nécessaires pour le workflow
+permissions:
+  contents: write # Pour créer des tags et des releases
+  actions: read # Pour lire les actions du workflow
+  checks: write # Pour écrire des résultats de test
+  id-token: write # Nécessaire pour l'authentification des releases
+
 jobs:
   check_merge_from_dev:
     runs-on: ubuntu-latest
@@ -255,8 +262,36 @@ jobs:
           cd ../..
           ls -la release-assets/
 
+      # Vérification de l'existence du tag avant de créer la release
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          TAG_NAME="v${{ needs.check_merge_from_dev.outputs.version }}"
+          echo "Vérification si le tag $TAG_NAME existe déjà..."
+          if git ls-remote --tags origin refs/tags/$TAG_NAME | grep -q $TAG_NAME; then
+            echo "Le tag $TAG_NAME existe déjà"
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Le tag $TAG_NAME n'existe pas encore"
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Suppression du tag existant si nécessaire pour permettre une nouvelle release
+      - name: Delete existing tag if necessary
+        if: steps.check_tag.outputs.tag_exists == 'true'
+        run: |
+          TAG_NAME="v${{ needs.check_merge_from_dev.outputs.version }}"
+          echo "Suppression du tag existant $TAG_NAME..."
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git tag -d $TAG_NAME || true
+          git push origin :refs/tags/$TAG_NAME || true
+          echo "Tag supprimé avec succès."
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ needs.check_merge_from_dev.outputs.version }}
           name: Release v${{ needs.check_merge_from_dev.outputs.version }}
@@ -281,5 +316,3 @@ jobs:
             release-assets/foodguess-web-${{ needs.check_merge_from_dev.outputs.version }}.zip
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
