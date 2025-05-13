@@ -122,6 +122,23 @@ jobs:
           echo "Contenu du pubspec.yaml modifié:"
           cat pubspec.yaml
 
+      - name: Fix ColorScheme in main.dart
+        run: |
+          echo "Correction du ColorScheme dans main.dart pour ajouter les paramètres requis..."
+          # Vérifier si les paramètres background et onBackground sont déjà présents
+          if ! grep -q "background:" lib/main.dart || ! grep -q "onBackground:" lib/main.dart; then
+            # Sauvegarder le fichier original
+            cp lib/main.dart lib/main.dart.bak
+            
+            # Ajouter les paramètres manquants au ColorScheme
+            sed -i '/surface: AppColors.beigeLight,/a\\          background: AppColors.beigeLight,\n          onBackground: Colors.black87,' lib/main.dart
+            
+            echo "ColorScheme mis à jour avec les paramètres requis."
+            grep -A 15 "colorScheme:" lib/main.dart
+          else
+            echo "ColorScheme semble déjà contenir les paramètres requis."
+          fi
+
       - name: Install dependencies
         run: flutter pub get
 
