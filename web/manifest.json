@@ -1,6 +1,6 @@
 {
-    "name": "collecte",
-    "short_name": "collecte",
+    "name": "FoodGuess",
+    "short_name": "FoodGuess",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FFFFFF",

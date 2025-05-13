@@ -138,7 +138,7 @@ jobs:
           # Créer un nouveau projet temporaire avec la structure correcte
           echo "Création d'un nouveau projet Flutter avec la structure à jour..."
           cd ..
-          flutter create --project-name collecte --org com.foodguess temporary_project
+          flutter create --project-name FoodGuess --org com.foodguess temporary_project
 
           # Restaurer les fichiers de l'ancien projet dans le nouveau
           echo "Restauration du code et des ressources dans le nouveau projet..."
@@ -149,10 +149,10 @@ jobs:
 
           # Remplacer l'ancien projet par le nouveau
           echo "Remplacement de l'ancien projet par le nouveau..."
-          cp -r temporary_project/android/* collecte/android/
+          cp -r temporary_project/android/* FoodGuess/android/
 
           # Revenir au dossier du projet
-          cd collecte
+          cd FoodGuess
 
           echo "Structure du projet Android mise à jour"
           ls -la android/

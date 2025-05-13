@@ -72,7 +72,7 @@ class HomeScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Image.asset(
-                'assets/logo_collecte.png',
+                'assets/logo_foodguess.png',
                 width: 100,
                 height: 100,
                 fit: BoxFit.contain,
@@ -132,7 +132,7 @@ class HomeScreen extends StatelessWidget {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                'Parie sur les aliments de la prochaine collecte !',
+                'Parie sur les aliments du prochain arrivage !',
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -287,7 +287,7 @@ class HomeScreen extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: Image.asset(
-                    'assets/logo_collecte.png',
+                    'assets/logo_foodguess.png',
                     width: 120,
                     height: 120,
                     fit: BoxFit.cover,

@@ -1,4 +1,4 @@
-package com.example.collecte
+package com.example.foodguess
 
 import io.flutter.embedding.android.FlutterActivity
 
