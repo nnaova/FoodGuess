@@ -252,6 +252,46 @@ jobs:
 
           ls -la release-assets/
 
+      - name: Setup iOS build environment
+        run: |
+          echo "Configuration de l'environnement de build pour iOS"
+          # Vérification de la structure du dossier iOS
+          if [ -d "ios" ]; then
+            echo "Dossier iOS trouvé"
+            ls -la ios/
+          else
+            echo "ERREUR: Le dossier iOS n'a pas été trouvé!"
+            exit 1
+          fi
+
+          # Modification des configurations pour la compatibilité
+          echo "Mise à jour des configurations iOS..."
+          if [ -f "ios/Flutter/AppFrameworkInfo.plist" ]; then
+            echo "AppFrameworkInfo.plist trouvé"
+          fi
+
+          # Configuration pour la signature automatique en development (sans certificat)
+          echo "Configuration de la signature automatique pour le development..."
+          if [ -f "ios/Runner.xcodeproj/project.pbxproj" ]; then
+            sed -i 's/ProvisioningStyle = Manual;/ProvisioningStyle = Automatic;/g' ios/Runner.xcodeproj/project.pbxproj || echo "Pas de style de provisionnement manuel trouvé"
+            sed -i 's/DEVELOPMENT_TEAM = "";/DEVELOPMENT_TEAM = "auto";/g' ios/Runner.xcodeproj/project.pbxproj || echo "Pas d'équipe de développement vide trouvée"
+          fi
+
+      - name: Build iOS Archive
+        run: |
+          echo "Construction de l'archive iOS..."
+          # En environnement CI, nous construisons en mode release sans signature
+          flutter build ios --release --no-codesign
+
+          # Création d'un IPA sans signature (pour les tests)
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r release-assets/foodguess-${{ needs.check_merge_from_dev.outputs.version }}-unsigned.ipa Payload
+          rm -rf Payload
+
+          echo "Archive iOS créée avec succès"
+          ls -la release-assets/
+
       - name: Build release for Web
         run: flutter build web --release
 
@@ -302,6 +342,7 @@ jobs:
 
             ## Téléchargements
             - [📱 Application Android (APK)](https://github.com/${{ github.repository }}/releases/download/v${{ needs.check_merge_from_dev.outputs.version }}/foodguess-${{ needs.check_merge_from_dev.outputs.version }}.apk)
+            - [🍎 Application iOS (IPA non signé)](https://github.com/${{ github.repository }}/releases/download/v${{ needs.check_merge_from_dev.outputs.version }}/foodguess-${{ needs.check_merge_from_dev.outputs.version }}-unsigned.ipa)
             - [🌐 Version Web (ZIP)](https://github.com/${{ github.repository }}/releases/download/v${{ needs.check_merge_from_dev.outputs.version }}/foodguess-web-${{ needs.check_merge_from_dev.outputs.version }}.zip)
 
             ## Notes de version
@@ -313,6 +354,7 @@ jobs:
             - Version: ${{ needs.check_merge_from_dev.outputs.version }}
           files: |
             release-assets/foodguess-${{ needs.check_merge_from_dev.outputs.version }}.apk
+            release-assets/foodguess-${{ needs.check_merge_from_dev.outputs.version }}-unsigned.ipa
             release-assets/foodguess-web-${{ needs.check_merge_from_dev.outputs.version }}.zip
           draft: false
           prerelease: false
