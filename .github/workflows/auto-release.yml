@@ -252,44 +252,39 @@ jobs:
 
           ls -la release-assets/
 
-      - name: Setup iOS build environment
+      - name: Create iOS Placeholder
         run: |
-          echo "Configuration de l'environnement de build pour iOS"
-          # Vérification de la structure du dossier iOS
-          if [ -d "ios" ]; then
-            echo "Dossier iOS trouvé"
-            ls -la ios/
-          else
-            echo "ERREUR: Le dossier iOS n'a pas été trouvé!"
-            exit 1
-          fi
+          echo "INFO: La construction d'applications iOS ne peut être effectuée que sur macOS."
+          echo "Cette étape crée un fichier placeholder pour maintenir la structure des releases."
 
-          # Modification des configurations pour la compatibilité
-          echo "Mise à jour des configurations iOS..."
-          if [ -f "ios/Flutter/AppFrameworkInfo.plist" ]; then
-            echo "AppFrameworkInfo.plist trouvé"
-          fi
+          # Création du dossier pour les assets de la release s'il n'existe pas déjà
+          mkdir -p release-assets
 
-          # Configuration pour la signature automatique en development (sans certificat)
-          echo "Configuration de la signature automatique pour le development..."
-          if [ -f "ios/Runner.xcodeproj/project.pbxproj" ]; then
-            sed -i 's/ProvisioningStyle = Manual;/ProvisioningStyle = Automatic;/g' ios/Runner.xcodeproj/project.pbxproj || echo "Pas de style de provisionnement manuel trouvé"
-            sed -i 's/DEVELOPMENT_TEAM = "";/DEVELOPMENT_TEAM = "auto";/g' ios/Runner.xcodeproj/project.pbxproj || echo "Pas d'équipe de développement vide trouvée"
-          fi
+          # Création d'un fichier README comme placeholder pour l'IPA
+          cat > release-assets/README.txt <<EOF
+          # Note importante sur la version iOS
 
-      - name: Build iOS Archive
-        run: |
-          echo "Construction de l'archive iOS..."
-          # En environnement CI, nous construisons en mode release sans signature
-          flutter build ios --release --no-codesign
+          Ce fichier est un placeholder pour l'application iOS.
 
-          # Création d'un IPA sans signature (pour les tests)
-          mkdir -p Payload
-          cp -r build/ios/iphoneos/Runner.app Payload/
-          zip -r release-assets/foodguess-${{ needs.check_merge_from_dev.outputs.version }}-unsigned.ipa Payload
-          rm -rf Payload
+          La compilation d'applications iOS nécessite une machine macOS et ne peut pas être 
+          effectuée dans cet environnement GitHub Actions sur Ubuntu.
 
-          echo "Archive iOS créée avec succès"
+          Pour construire l'application iOS, veuillez utiliser un Mac avec Xcode et Flutter installés.
+
+          ## Instructions pour la compilation manuelle
+          1. Clonez le dépôt: git clone https://github.com/${{ github.repository }}.git
+          2. Ouvrez le projet dans Xcode: open ios/Runner.xcworkspace
+          3. Configurez votre profil de provisionnement
+          4. Exécutez: flutter build ios --release
+          EOF
+
+          # Création d'un fichier ZIP comme placeholder pour l'IPA
+          cd release-assets
+          zip foodguess-${{ needs.check_merge_from_dev.outputs.version }}-unsigned.ipa README.txt
+          rm README.txt
+          cd ..
+
+          echo "Placeholder pour iOS créé avec succès"
           ls -la release-assets/
 
       - name: Build release for Web
@@ -342,8 +337,9 @@ jobs:
 
             ## Téléchargements
             - [📱 Application Android (APK)](https://github.com/${{ github.repository }}/releases/download/v${{ needs.check_merge_from_dev.outputs.version }}/foodguess-${{ needs.check_merge_from_dev.outputs.version }}.apk)
-            - [🍎 Application iOS (IPA non signé)](https://github.com/${{ github.repository }}/releases/download/v${{ needs.check_merge_from_dev.outputs.version }}/foodguess-${{ needs.check_merge_from_dev.outputs.version }}-unsigned.ipa)
             - [🌐 Version Web (ZIP)](https://github.com/${{ github.repository }}/releases/download/v${{ needs.check_merge_from_dev.outputs.version }}/foodguess-web-${{ needs.check_merge_from_dev.outputs.version }}.zip)
+
+            > **Note**: La version iOS n'est pas disponible dans cette release automatique car la compilation d'applications iOS nécessite une machine macOS. Pour obtenir l'application iOS, veuillez construire manuellement le projet sur un Mac avec Xcode.
 
             ## Notes de version
             _Consultez l'historique des commits pour plus de détails sur les changements apportés._
