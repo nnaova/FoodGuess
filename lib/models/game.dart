@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'bet_item.dart';
 import 'player.dart';
 
@@ -104,5 +105,24 @@ class Game with ChangeNotifier {
     scoringItems = [];
 
     notifyListeners();
+  }
+
+  // Ajouter un nouvel élément pariable pendant la partie
+  void addBetItem(BetItem newItem) {
+    // Vérifier que l'élément n'existe pas déjà (par son nom)
+    final nameExists = availableBetItems
+        .any((item) => item.name.toLowerCase() == newItem.name.toLowerCase());
+
+    if (!nameExists) {
+      try {
+        // Essayer d'ajouter directement à la liste
+        availableBetItems.add(newItem);
+      } catch (e) {
+        debugPrint('Erreur lors de l\'ajout de l\'élément: $e');
+        // Gestion manuelle en cas d'erreur (liste immuable)
+        // Cette partie ne devrait pas être nécessaire si la liste est correctement initialisée
+      }
+      notifyListeners();
+    }
   }
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:async'; // Import pour utiliser Timer
+import 'package:uuid/uuid.dart'; // Import pour générer des UUID
 import '../models/game.dart';
 import '../models/bet_item.dart';
 import '../services/game_history_storage.dart'; // Import du service de stockage
+import '../services/bet_item_storage.dart'; // Import pour sauvegarder les nouveaux éléments
 
 class GamePlayScreen extends StatefulWidget {
   final Game game;
@@ -22,6 +24,12 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
   final GameHistoryStorage _historyStorage =
       GameHistoryStorage(); // Service de stockage
   String? _gameId; // ID de la partie en cours
+
+  // Contrôleurs pour l'ajout d'un nouvel élément
+  final TextEditingController _newItemNameController = TextEditingController();
+  final TextEditingController _newItemDescController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final BetItemStorage _betItemStorage = BetItemStorage();
 
   @override
   void initState() {
@@ -52,6 +60,8 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
       _saveGameInProgress();
     }
     _searchController.dispose();
+    _newItemNameController.dispose();
+    _newItemDescController.dispose();
     super.dispose();
   }
 
@@ -158,6 +168,167 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
     }
   }
 
+  // Afficher une boîte de dialogue pour ajouter un nouvel élément
+  void _showAddItemDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ajouter un nouvel aliment'),
+        content: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _newItemNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nom de l\'aliment',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Veuillez entrer un nom';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _newItemDescController,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optionnelle)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              final newItemId = _addNewItemAndGetId();
+              if (newItemId != null) {
+                _placeBet(newItemId);
+              }
+            },
+            child: const Text('Ajouter et parier'),
+          ),
+          ElevatedButton(
+            onPressed: () => _addNewItem(),
+            child: const Text('Ajouter'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Ajouter un nouvel élément et le sauvegarder
+  void _addNewItem() {
+    if (_formKey.currentState!.validate()) {
+      // Créer un nouvel élément
+      final newItem = BetItem(
+        id: const Uuid().v4(),
+        name: _newItemNameController.text.trim(),
+        description: _newItemDescController.text.trim(),
+        points: 1,
+      );
+
+      // Ajouter l'élément au jeu actuel
+      setState(() {
+        _game.addBetItem(newItem);
+        _filteredItems = List.from(_game.availableItems);
+      });
+
+      // Sauvegarder le nouvel élément dans le stockage permanent
+      _saveBetItemToPermanentStorage(newItem);
+
+      // Effacer les champs et fermer la boîte de dialogue
+      _newItemNameController.clear();
+      _newItemDescController.clear();
+      Navigator.pop(context);
+
+      // Afficher une confirmation et proposer de parier sur l'élément
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('${newItem.name} a été ajouté aux aliments disponibles'),
+          backgroundColor: Colors.green,
+          action: SnackBarAction(
+            label: 'Parier dessus',
+            textColor: Colors.white,
+            onPressed: () {
+              _placeBet(newItem.id);
+            },
+          ),
+        ),
+      );
+    }
+  }
+
+  // Ajouter un nouvel élément, le sauvegarder et retourner son ID pour parier dessus
+  String? _addNewItemAndGetId() {
+    if (_formKey.currentState!.validate()) {
+      // Créer un nouvel élément
+      final newItem = BetItem(
+        id: const Uuid().v4(),
+        name: _newItemNameController.text.trim(),
+        description: _newItemDescController.text.trim(),
+        points: 1,
+      );
+
+      // Ajouter l'élément au jeu actuel
+      setState(() {
+        _game.addBetItem(newItem);
+        _filteredItems = List.from(_game.availableItems);
+      });
+
+      // Sauvegarder le nouvel élément dans le stockage permanent
+      _saveBetItemToPermanentStorage(newItem);
+
+      // Effacer les champs et fermer la boîte de dialogue
+      _newItemNameController.clear();
+      _newItemDescController.clear();
+      Navigator.pop(
+          context); // Afficher un message indiquant que l'élément a été ajouté
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${newItem.name} a été ajouté et vous pariez dessus!'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // Retourner l'ID pour parier dessus
+      return newItem.id;
+    }
+    return null;
+  }
+
+  // Sauvegarder le nouvel élément dans le stockage permanent
+  Future<void> _saveBetItemToPermanentStorage(BetItem newItem) async {
+    try {
+      // Charger les éléments existants
+      final existingItems = await _betItemStorage.loadBetItems();
+
+      // Vérifier si l'élément existe déjà par son nom
+      final nameExists = existingItems
+          .any((item) => item.name.toLowerCase() == newItem.name.toLowerCase());
+
+      if (!nameExists) {
+        // Ajouter le nouvel élément et sauvegarder
+        existingItems.add(newItem);
+        await _betItemStorage.saveBetItems(existingItems);
+      }
+    } catch (e) {
+      debugPrint('Erreur lors de la sauvegarde du nouvel élément: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -172,6 +343,10 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
               'Terminer',
               style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _showAddItemDialog,
           ),
         ],
       ),

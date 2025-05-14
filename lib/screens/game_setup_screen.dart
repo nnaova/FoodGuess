@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter/foundation.dart';
 import '../models/player.dart';
 import '../models/bet_item.dart';
 import '../models/game.dart';
@@ -48,18 +49,89 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
     super.dispose();
   }
 
-  void _addPlayer() {
+  void _addPlayer() async {
     if (_formKey.currentState!.validate()) {
+      final newPlayerName = _playerNameController.text.trim();
+      
+      // Vérifier si un joueur avec le même nom existe déjà dans la liste disponible
+      final existingPlayerWithSameName = _availablePlayers
+          .where((player) => player.name.toLowerCase() == newPlayerName.toLowerCase())
+          .toList();
+          
+      // Si un joueur avec ce nom existe déjà, proposer de l'utiliser plutôt
+      if (existingPlayerWithSameName.isNotEmpty) {
+        final shouldUseExisting = await _showPlayerAlreadyExistsDialog(existingPlayerWithSameName.first);
+        if (shouldUseExisting) {
+          _addExistingPlayer(existingPlayerWithSameName.first);
+          _playerNameController.clear();
+          return;
+        }
+      }
+      
+      // Créer un nouveau joueur
+      final newPlayer = Player(
+        id: const Uuid().v4(),
+        name: newPlayerName,
+      );
+      
       setState(() {
-        _players.add(
-          Player(
-            id: const Uuid().v4(),
-            name: _playerNameController.text.trim(),
+        _players.add(newPlayer);
+      });
+      
+      // Ajouter le joueur à la liste des joueurs disponibles
+      setState(() {
+        _availablePlayers.add(newPlayer);
+      });
+      
+      // Sauvegarder le joueur dans le stockage permanent
+      await _saveNewPlayer(newPlayer);
+      
+      _playerNameController.clear();
+      
+      // Afficher une confirmation
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$newPlayerName a été ajouté à la liste des joueurs'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
-      });
-      _playerNameController.clear();
+      }
     }
+  }
+  
+  // Sauvegarder un nouveau joueur dans le stockage permanent
+  Future<void> _saveNewPlayer(Player newPlayer) async {
+    try {
+      // Ajouter le joueur à la liste existante et sauvegarder
+      final updatedPlayerList = List<Player>.from(_availablePlayers);
+      await _playerStorage.savePlayers(updatedPlayerList);
+    } catch (e) {
+      debugPrint('Erreur lors de la sauvegarde du nouveau joueur: $e');
+    }
+  }
+  
+  // Affiche une boîte de dialogue pour demander si l'utilisateur veut utiliser un joueur existant
+  Future<bool> _showPlayerAlreadyExistsDialog(Player existingPlayer) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Joueur existant'),
+        content: Text('Un joueur nommé "${existingPlayer.name}" existe déjà. Voulez-vous l\'ajouter à la partie ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Créer nouveau'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Utiliser existant'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 
   void _addExistingPlayer(Player player) {
