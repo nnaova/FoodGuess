@@ -254,8 +254,8 @@ jobs:
 
       - name: Create iOS Placeholder
         run: |
-          echo "INFO: La construction d'applications iOS ne peut être effectuée que sur macOS."
-          echo "Cette étape crée un fichier placeholder pour maintenir la structure des releases."
+          echo "INFO: La construction d'applications iOS sera déclenchée automatiquement sur macOS."
+          echo "Cette étape crée un fichier placeholder pour maintenir la structure des releases en attendant."
 
           # Création du dossier pour les assets de la release s'il n'existe pas déjà
           mkdir -p release-assets
@@ -266,12 +266,13 @@ jobs:
 
           Ce fichier est un placeholder pour l'application iOS.
 
-          La compilation d'applications iOS nécessite une machine macOS et ne peut pas être 
-          effectuée dans cet environnement GitHub Actions sur Ubuntu.
+          Un workflow séparé sur macos-latest sera automatiquement déclenché pour compiler
+          l'application iOS après la création de cette release.
 
-          Pour construire l'application iOS, veuillez utiliser un Mac avec Xcode et Flutter installés.
+          Pour télécharger la version iOS, veuillez consulter les releases ultérieures ou
+          vérifier la section 'Actions' de ce dépôt GitHub pour trouver le build iOS.
 
-          ## Instructions pour la compilation manuelle
+          ## Pour une compilation manuelle
           1. Clonez le dépôt: git clone https://github.com/${{ github.repository }}.git
           2. Ouvrez le projet dans Xcode: open ios/Runner.xcworkspace
           3. Configurez votre profil de provisionnement
