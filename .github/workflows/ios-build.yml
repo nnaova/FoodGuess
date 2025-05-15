@@ -35,8 +35,37 @@ jobs:
           flutter --version
           dart --version
 
+      - name: Ajuster les dépendances pour la compatibilité
+        run: |
+          # Sauvegarder le pubspec.yaml original
+          cp pubspec.yaml pubspec.yaml.bak
+
+          # Modifier les versions des dépendances pour être compatibles avec Flutter 3.19.0
+          sed -i 's/flutter_lints: \^5.0.0/flutter_lints: \^2.0.0/' pubspec.yaml
+          sed -i 's/cupertino_icons: \^1.0.8/cupertino_icons: \^1.0.2/' pubspec.yaml
+
+          echo "Contenu du pubspec.yaml modifié:"
+          cat pubspec.yaml
+
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Fix ColorScheme in main.dart
+        run: |
+          echo "Correction du ColorScheme dans main.dart pour ajouter les paramètres requis..."
+          # Vérifier si les paramètres background et onBackground sont déjà présents
+          if ! grep -q "background:" lib/main.dart || ! grep -q "onBackground:" lib/main.dart; then
+            # Sauvegarder le fichier original
+            cp lib/main.dart lib/main.dart.bak
+            
+            # Ajouter les paramètres manquants au ColorScheme
+            sed -i '/surface: AppColors.beigeLight,/a\\          background: AppColors.beigeLight,\n          onBackground: Colors.black87,' lib/main.dart
+            
+            echo "ColorScheme mis à jour avec les paramètres requis."
+            grep -A 15 "colorScheme:" lib/main.dart
+          else
+            echo "ColorScheme semble déjà contenir les paramètres requis."
+          fi
 
       # Déterminer la version à partir de l'événement déclencheur ou du paramètre d'entrée
       - name: Set version
@@ -94,7 +123,7 @@ jobs:
           rm -rf Payload
 
       - name: Upload iOS build as artifact
-        uses: actions/upload-artifact@v4.3.1
+        uses: actions/upload-artifact@v3
         with:
           name: ios-build
           path: release-assets/*.ipa
