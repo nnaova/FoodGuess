@@ -71,7 +71,7 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'FoodGuess',
       theme: ThemeData(
-        colorScheme: ColorScheme(
+        colorScheme: const ColorScheme(
           brightness: Brightness.light,
           primary: AppColors.greenApple,
           onPrimary: Colors.black87,

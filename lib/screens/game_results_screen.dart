@@ -182,10 +182,10 @@ class _GameResultsScreenState extends State<GameResultsScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            CircleAvatar(
+            const CircleAvatar(
               radius: 30,
               backgroundColor: Colors.amber,
-              child: const Icon(
+              child: Icon(
                 Icons.emoji_events,
                 size: 36,
                 color: Colors.white,

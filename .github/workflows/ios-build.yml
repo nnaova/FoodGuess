@@ -94,7 +94,7 @@ jobs:
           rm -rf Payload
 
       - name: Upload iOS build as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.3.1
         with:
           name: ios-build
           path: release-assets/*.ipa
