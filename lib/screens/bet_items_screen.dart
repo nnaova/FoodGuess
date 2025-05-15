@@ -42,11 +42,10 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
       if (query.isEmpty) {
         _filteredBetItems = List.from(_betItems);
       } else {
-        _filteredBetItems =
-            _betItems.where((item) {
-              return item.name.toLowerCase().contains(query) ||
-                  item.description.toLowerCase().contains(query);
-            }).toList();
+        _filteredBetItems = _betItems.where((item) {
+          return item.name.toLowerCase().contains(query) ||
+              item.description.toLowerCase().contains(query);
+        }).toList();
       }
     });
   }
@@ -83,8 +82,7 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
             id: const Uuid().v4(),
             name: _nameController.text.trim(),
             description: _descriptionController.text.trim(),
-            points:
-                int.tryParse(_pointsController.text) ??
+            points: int.tryParse(_pointsController.text) ??
                 1, // Utiliser la valeur des points
           ),
         );
@@ -106,8 +104,7 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim(),
           isScoring: item.isScoring,
-          points:
-              int.tryParse(_pointsController.text) ??
+          points: int.tryParse(_pointsController.text) ??
               1, // Utiliser la valeur des points
         );
         _filterBetItems(); // Mettre à jour la liste filtrée
@@ -136,89 +133,90 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
     } else {
       _nameController.clear();
       _descriptionController.clear();
-      _pointsController.clear(); // Effacer les points
+      _pointsController.text = "1"; // Initialiser les points à 1 par défaut
     }
 
     showDialog(
       context: context,
-      builder:
-          (ctx) => AlertDialog(
-            title: Text(
-              item == null ? 'Ajouter un élément' : 'Modifier l\'élément',
-            ),
-            content: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(labelText: 'Nom'),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Veuillez entrer un nom';
-                      }
-
-                      // Vérifier s'il existe déjà un aliment avec ce nom
-                      final trimmedValue = value.trim();
-                      final isEditing = item != null;
-
-                      // Lors de la modification, on ne vérifie pas le nom actuel de l'élément
-                      bool alreadyExists = _betItems.any(
-                        (betItem) =>
-                            betItem.name.toLowerCase() ==
-                                trimmedValue.toLowerCase() &&
-                            (!isEditing || betItem.id != item.id),
-                      );
-
-                      if (alreadyExists) {
-                        return 'Un aliment avec ce nom existe déjà';
-                      }
-
-                      return null;
-                    },
-                  ),
-                  TextFormField(
-                    controller: _descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Description (optionnelle)',
-                    ),
-                  ),
-                  TextFormField(
-                    controller: _pointsController,
-                    decoration: const InputDecoration(labelText: 'Points'),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Veuillez entrer un nombre de points';
-                      }
-                      final points = int.tryParse(value.trim());
-                      if (points == null || points <= 0) {
-                        return 'Veuillez entrer un nombre valide supérieur à 0';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Annuler'),
-              ),
-              TextButton(
-                onPressed: () {
-                  if (item == null) {
-                    _addBetItem();
-                  } else {
-                    _editBetItem(item, index!);
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          item == null ? 'Ajouter un élément' : 'Modifier l\'élément',
+        ),
+        content: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Nom'),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Veuillez entrer un nom';
                   }
+
+                  // Vérifier s'il existe déjà un aliment avec ce nom
+                  final trimmedValue = value.trim();
+                  final isEditing = item != null;
+
+                  // Lors de la modification, on ne vérifie pas le nom actuel de l'élément
+                  bool alreadyExists = _betItems.any(
+                    (betItem) =>
+                        betItem.name.toLowerCase() ==
+                            trimmedValue.toLowerCase() &&
+                        (!isEditing || betItem.id != item.id),
+                  );
+
+                  if (alreadyExists) {
+                    return 'Un aliment avec ce nom existe déjà';
+                  }
+
+                  return null;
                 },
-                child: Text(item == null ? 'Ajouter' : 'Modifier'),
+              ),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optionnelle)',
+                ),
+              ),
+              TextFormField(
+                controller: _pointsController,
+                decoration: const InputDecoration(labelText: 'Points'),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  // Si le champ est vide, on utilisera la valeur par défaut (1)
+                  if (value == null || value.trim().isEmpty) {
+                    return null;
+                  }
+                  // Si une valeur est spécifiée, elle doit être un nombre valide
+                  final points = int.tryParse(value.trim());
+                  if (points == null || points <= 0) {
+                    return 'Veuillez entrer un nombre valide supérieur à 0';
+                  }
+                  return null;
+                },
               ),
             ],
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (item == null) {
+                _addBetItem();
+              } else {
+                _editBetItem(item, index!);
+              }
+            },
+            child: Text(item == null ? 'Ajouter' : 'Modifier'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -230,82 +228,77 @@ class _BetItemsScreenState extends State<BetItemsScreen> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: const InputDecoration(
-                        labelText: 'Rechercher',
-                        prefixIcon: Icon(Icons.search),
-                        border: OutlineInputBorder(),
-                      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      labelText: 'Rechercher',
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(),
                     ),
                   ),
-                  Expanded(
-                    child:
-                        _filteredBetItems.isEmpty
-                            ? const Center(
-                              child: Text(
-                                'Aucun élément pariable trouvé.\nEssayez une autre recherche.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 18),
+                ),
+                Expanded(
+                  child: _filteredBetItems.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'Aucun élément pariable trouvé.\nEssayez une autre recherche.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 18),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: _filteredBetItems.length,
+                          itemBuilder: (ctx, index) {
+                            final item = _filteredBetItems[index];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 15,
+                                vertical: 8,
                               ),
-                            )
-                            : ListView.builder(
-                              itemCount: _filteredBetItems.length,
-                              itemBuilder: (ctx, index) {
-                                final item = _filteredBetItems[index];
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 15,
-                                    vertical: 8,
-                                  ),
-                                  child: ListTile(
-                                    title: Text(item.name),
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        if (item.description.isNotEmpty)
-                                          Text(item.description),
-                                        Text('Points: ${item.points}'),
-                                      ],
+                              child: ListTile(
+                                title: Text(item.name),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (item.description.isNotEmpty)
+                                      Text(item.description),
+                                    Text('Points: ${item.points}'),
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit),
+                                      onPressed: () => _showAddEditDialog(
+                                        item: item,
+                                        index: _betItems.indexOf(item),
+                                      ),
                                     ),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.edit),
-                                          onPressed:
-                                              () => _showAddEditDialog(
-                                                item: item,
-                                                index: _betItems.indexOf(item),
-                                              ),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.delete,
-                                            color: Colors.red,
-                                          ),
-                                          onPressed:
-                                              () => _deleteBetItem(
-                                                _betItems.indexOf(item),
-                                              ),
-                                        ),
-                                      ],
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed: () => _deleteBetItem(
+                                        _betItems.indexOf(item),
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                            ),
-                  ),
-                ],
-              ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEditDialog(),
         child: const Icon(Icons.add),
