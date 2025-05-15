@@ -10,6 +10,66 @@ FoodGuess est une application ludique qui permet de parier sur les aliments qui 
 - **Statistiques**: Comparez les performances des joueurs et consultez les statistiques individuelles détaillées
 - **Gestion des joueurs**: Créez et modifiez les profils des joueurs
 
+## État d'avancement du projet
+
+### Fonctionnalités implémentées et planifiées
+
+#### Gestion des joueurs
+
+- [x] Création, modification et suppression de profils de joueurs
+- [x] Sauvegarde des profils entre les sessions de jeu
+- [x] Recherche des joueurs
+
+#### Gestion des aliments
+
+- [x] Ajout, modification et suppression d'aliments avec description
+- [x] Attribution de points personnalisés pour chaque aliment (valeur par défaut: 1 point)
+
+#### Système de jeu complet
+
+- [x] Création de nouvelles parties avec sélection des joueurs participants
+- [x] Interface de paris où chaque joueur sélectionne ses aliments
+- [x] Écran de score final avec compilation des résultats
+- [x] Option pour rejouer avec les mêmes joueurs
+
+#### Historique et statistiques
+
+- [x] Enregistrement automatique de l'historique des parties
+- [x] Visualisation détaillée des statistiques par joueur
+- [x] Comparaison des performances entre joueurs
+
+#### Interface utilisateur
+
+- [x] Design moderne et intuitif
+- [x] Thème personnalisé avec couleurs harmonieuses
+- [x] Expérience adaptée aux téléphones, tablettes et navigateurs web
+
+#### Personnalisation avancée
+
+- [ ] Importation/exportation des listes d'aliments
+- [ ] Options de personnalisation visuelle (thèmes, couleurs)
+- [ ] Ajout de photo de profil pour les joueurs
+- [ ] Ajout d'image pour les aliments
+
+#### Fonctionnalités sociales
+
+- [ ] Partage des résultats sur les réseaux sociaux
+- [ ] Classements et badges pour les accomplissements
+- [ ] Option pour défier des amis à distance
+
+#### Améliorations techniques
+
+- [ ] Synchronisation cloud des données
+- [ ] Support hors-ligne amélioré
+- [ ] Optimisation des performances
+
+#### Accessibilité
+
+- [ ] Support complet des fonctionnalités d'accessibilité
+- [ ] Mode daltonien
+- [ ] Support des lecteurs d'écran
+- [ ] Interface adaptable pour les personnes ayant des difficultés motrices
+
 ## Comment jouer
 
 1. Commencez par créer une liste d'aliments dans la section "Gérer aliments"
@@ -96,18 +156,6 @@ lib/
 
 ## Versions
 
-L'application est actuellement en version 1.1 (Mai 2025)
+L'application est actuellement en version 0.4.0 (Mai 2025)
 
 ## Statistiques des joueurs
-
-L'application offre maintenant des statistiques détaillées pour chaque joueur:
-
-- Taux de victoire, d'égalités et de défaites
-- Score moyen par partie
-- Score total et meilleur score
-- Visualisation graphique des performances
-- Historique des parties récentes
-
-## Crédits
-
-- **Concept & Design & Développement**: Alexandre Giordana
