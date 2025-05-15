@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -39,74 +41,72 @@ jobs:
         run: |
           # Sauvegarder le pubspec.yaml original
           cp pubspec.yaml pubspec.yaml.bak
-
-          # Modifier les versions des dépendances pour être compatibles avec Flutter 3.19.0
-          sed -i 's/flutter_lints: \^5.0.0/flutter_lints: \^2.0.0/' pubspec.yaml
-          sed -i 's/cupertino_icons: \^1.0.8/cupertino_icons: \^1.0.2/' pubspec.yaml
-
-          echo "Contenu du pubspec.yaml modifié:"
-          cat pubspec.yaml
+          
+          # Méthode compatible avec macOS pour modifier pubspec.yaml
+          echo "Modification des dépendances pour la compatibilité avec Flutter 3.19.0..."
+          
+          # Utiliser awk qui est plus compatible entre les systèmes
+          cat pubspec.yaml | awk '
+            /^  flutter_lints:/ { print "  flutter_lints: ^2.0.0"; next }
+            /^  cupertino_icons:/ { print "  cupertino_icons: ^1.0.2"; next }
+            /^  uuid:/ { print "  uuid: ^3.0.7"; next }
+            /^  provider:/ { print "  provider: ^6.0.5"; next }
+            /^  flutter_launcher_icons:/ { print "  flutter_launcher_icons: ^0.13.1"; next }
+            { print }
+          ' > pubspec.yaml.new
+          
+          if [ -f "pubspec.yaml.new" ]; then
+            mv pubspec.yaml.new pubspec.yaml
+            echo "Dépendances mises à jour avec succès."
+            echo "Contenu du pubspec.yaml mis à jour:"
+            cat pubspec.yaml
+          else
+            echo "ERREUR: La modification du pubspec.yaml a échoué."
+            exit 1
+          fi
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Fix ColorScheme in main.dart
-        run: |
-          echo "Correction du ColorScheme dans main.dart pour ajouter les paramètres requis..."
-          # Vérifier si les paramètres background et onBackground sont déjà présents
-          if ! grep -q "background:" lib/main.dart || ! grep -q "onBackground:" lib/main.dart; then
-            # Sauvegarder le fichier original
-            cp lib/main.dart lib/main.dart.bak
-            
-            # Ajouter les paramètres manquants au ColorScheme
-            sed -i '/surface: AppColors.beigeLight,/a\\          background: AppColors.beigeLight,\n          onBackground: Colors.black87,' lib/main.dart
-            
-            echo "ColorScheme mis à jour avec les paramètres requis."
-            grep -A 15 "colorScheme:" lib/main.dart
-          else
-            echo "ColorScheme semble déjà contenir les paramètres requis."
-          fi
-
-      # Déterminer la version à partir de l'événement déclencheur ou du paramètre d'entrée
       - name: Set version
         id: set_version
         run: |
-          # Si déclenché par une release, extraire la version du tag (v1.2.3 -> 1.2.3)
+          # Si déclenché par une release, extraire la version du tag
           if [ "${{ github.event_name }}" == "release" ]; then
-            VERSION=$(echo ${{ github.event.release.tag_name }} | sed 's/^v//')
+            VERSION=$(echo "${{ github.event.release.tag_name }}" | sed 's/^v//')
             echo "Événement de release détecté, version extraite: $VERSION"
           else
             # Si déclenché manuellement, utiliser la version fournie
             VERSION="${{ github.event.inputs.version }}"
             echo "Événement manuel détecté, version utilisée: $VERSION"
           fi
-
-          # Vérifier si la version est vide et utiliser une valeur par défaut si nécessaire
+          
+          # Si la version est vide, extraire de pubspec.yaml
           if [ -z "$VERSION" ]; then
-            # Essayer d'extraire depuis pubspec.yaml
             if [ -f "pubspec.yaml" ]; then
               VERSION=$(grep -m 1 "version:" pubspec.yaml | awk '{print $2}' | tr -d '"'"'" | cut -d '+' -f1)
             fi
             
-            # Si toujours vide, utiliser une version par défaut
+            # Si toujours vide, utiliser une valeur par défaut
             if [ -z "$VERSION" ]; then
               VERSION="1.0.0"
               echo "Aucune version détectée, utilisation de la valeur par défaut: $VERSION"
             fi
           fi
-
+          
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version finale utilisée: $VERSION"
 
       - name: Build iOS Archive
         run: |
           echo "Construction de l'archive iOS pour la version ${{ steps.set_version.outputs.version }}..."
-          # Mise à jour de CocoaPods si nécessaire
+          
+          # Mise à jour de CocoaPods
           cd ios && pod repo update && cd ..
-
+          
           # Préparation de l'environnement Xcode
           flutter build ios --release --no-codesign
-
+          
           # Vérification du chemin du build
           if [ -d "build/ios/iphoneos/Runner.app" ]; then
             echo "Répertoire Runner.app trouvé dans build/ios/iphoneos/"
@@ -114,7 +114,7 @@ jobs:
             echo "Recherche du chemin du Runner.app..."
             find build -name "Runner.app" -type d
           fi
-
+          
           # Création d'un IPA sans signature
           mkdir -p Payload
           cp -r build/ios/iphoneos/Runner.app Payload/
@@ -122,6 +122,7 @@ jobs:
           zip -r release-assets/foodguess-${{ steps.set_version.outputs.version }}-unsigned.ipa Payload
           rm -rf Payload
 
+      # Utilisation de la version v4 de upload-artifact
       - name: Upload iOS build as artifact
         uses: actions/upload-artifact@v4
         with:
