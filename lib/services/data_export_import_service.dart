@@ -505,154 +505,133 @@ class DataExportImportService {
     }
   }
 
-  /// Prévisualiser les aliments avant de les importer (JSON)
-  Future<List<BetItem>?> previewBetItemsImport() async {
+  /// Importe des aliments depuis une API
+  ///
+  /// Cette méthode se connecte à une API externe pour récupérer une liste d'aliments
+  /// et les importe dans l'application.
+  ///
+  /// Retourne true si l'importation a réussi, false sinon
+  Future<bool> importBetItemsFromApi({String apiUrl = ''}) async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-      );
+      // URL par défaut pour l'API (à remplacer quand l'API sera prête)
+      // Pour l'instant non utilisée car nous simulons la réponse
+      // final url = apiUrl.isNotEmpty ? apiUrl : 'https://api.foodguess.com/aliments';
 
-      if (result == null || result.files.isEmpty) {
-        return null;
+      // Simulation de l'appel API pour le moment (à remplacer par un vrai appel HTTP)
+      // En utilisant http package: await http.get(Uri.parse(url));
+      await Future.delayed(
+          const Duration(seconds: 1)); // Simulation d'un délai réseau
+
+      // Exemple de données simulées (à remplacer par la vraie réponse de l'API)
+      final jsonResponse = '''
+      {
+        "items": [
+          {"name": "Saumon", "description": "Poisson gras riche en oméga-3", "points": 3},
+          {"name": "Avocat", "description": "Fruit riche en bonnes graisses", "points": 2},
+          {"name": "Chocolat noir", "description": "Douceur amère", "points": 2}
+        ]
+      }
+      ''';
+
+      final Map<String, dynamic> data = jsonDecode(jsonResponse);
+      final List<dynamic> itemsJson = data['items'];
+
+      if (itemsJson.isEmpty) {
+        debugPrint('Aucun aliment trouvé dans la réponse de l\'API');
+        return false;
       }
 
-      final filePath = result.files.single.path;
-      if (filePath == null) {
-        return null;
-      }
-
-      final file = File(filePath);
-      final jsonString = await file.readAsString();
-      final Map<String, dynamic> importData = jsonDecode(jsonString);
-
-      if (!importData.containsKey('betItems')) {
-        return null;
-      }
-
-      return (importData['betItems'] as List)
-          .map((json) => BetItem.fromJson(json))
-          .toList();
-    } catch (e) {
-      debugPrint('Erreur lors de la prévisualisation des aliments: $e');
-      return null;
-    }
-  }
-
-  /// Prévisualiser les joueurs avant de les importer (JSON)
-  Future<List<Player>?> previewPlayersImport() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-      );
-
-      if (result == null || result.files.isEmpty) {
-        return null;
-      }
-
-      final filePath = result.files.single.path;
-      if (filePath == null) {
-        return null;
-      }
-
-      final file = File(filePath);
-      final jsonString = await file.readAsString();
-      final Map<String, dynamic> importData = jsonDecode(jsonString);
-
-      if (!importData.containsKey('players')) {
-        return null;
-      }
-
-      return (importData['players'] as List)
-          .map((json) => Player.fromJson(json))
-          .toList();
-    } catch (e) {
-      debugPrint('Erreur lors de la prévisualisation des joueurs: $e');
-      return null;
-    }
-  }
-
-  /// Prévisualiser les aliments avant de les importer (CSV)
-  Future<List<BetItem>?> previewBetItemsImportFromCSV() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['csv'],
-      );
-
-      if (result == null || result.files.isEmpty) {
-        return null;
-      }
-
-      final filePath = result.files.single.path;
-      if (filePath == null) {
-        return null;
-      }
-
-      final file = File(filePath);
-      final csvString = await file.readAsString();
-
-      // Convertir le CSV en liste de lignes
-      List<List<dynamic>> rows = const CsvToListConverter().convert(csvString);
-
-      if (rows.isEmpty || rows.length < 2) {
-        // Fichier vide ou sans données
-        return null;
-      }
-
-      // Vérifier l'en-tête
-      List<dynamic> headers = rows[0];
-      if (headers.length < 3 ||
-          !headers.contains('Nom') && !headers.contains('Name')) {
-        // En-tête invalide
-        return null;
-      }
-
-      // Récupérer les index des colonnes
-      int nameIndex = headers.indexOf('Nom');
-      if (nameIndex == -1) nameIndex = headers.indexOf('Name');
-
-      int descIndex = headers.indexOf('Description');
-      if (descIndex == -1) descIndex = headers.indexOf('Description');
-
-      int pointsIndex = headers.indexOf('Points');
-      if (pointsIndex == -1) pointsIndex = headers.indexOf('Points');
-
-      // Convertir les lignes en objets BetItem
-      List<BetItem> newItems = [];
-      for (int i = 1; i < rows.length; i++) {
-        if (rows[i].length <= nameIndex) continue;
-
-        String name = rows[i][nameIndex].toString();
-        if (name.isEmpty) continue;
-
-        String description = '';
-        if (descIndex != -1 && rows[i].length > descIndex) {
-          description = rows[i][descIndex].toString();
-        }
-
-        int points = 1;
-        if (pointsIndex != -1 && rows[i].length > pointsIndex) {
-          try {
-            points = int.parse(rows[i][pointsIndex].toString());
-          } catch (e) {
-            // Ignorer les erreurs de conversion
-          }
-        }
-
-        newItems.add(BetItem(
+      // Convertir les données JSON en objets BetItem
+      final List<BetItem> apiItems = itemsJson.map((json) {
+        return BetItem(
           id: const Uuid().v4(),
-          name: name,
-          description: description,
-          points: points,
-        ));
+          name: json['name'],
+          description: json['description'] ?? '',
+          points: json['points'] ?? 1,
+        );
+      }).toList();
+
+      // Fusion avec les données existantes pour éviter les doublons
+      final existingItems = await _betItemStorage.loadBetItems();
+      final existingNames =
+          existingItems.map((item) => item.name.toLowerCase()).toSet();
+
+      // Filtrer les nouveaux aliments pour éviter les doublons
+      final newItems = apiItems
+          .where((item) => !existingNames.contains(item.name.toLowerCase()))
+          .toList();
+
+      // Ajouter uniquement les nouveaux aliments
+      existingItems.addAll(newItems);
+      await _betItemStorage.saveBetItems(existingItems);
+
+      return newItems.isNotEmpty;
+    } catch (e) {
+      debugPrint('Erreur lors de l\'importation depuis l\'API: $e');
+      return false;
+    }
+  }
+
+  /// Prévisualiser les aliments disponibles depuis l'API avant de les importer
+  Future<List<BetItem>?> previewBetItemsFromApi({String apiUrl = ''}) async {
+    try {
+      // URL par défaut pour l'API (à remplacer quand l'API sera prête)
+      // Pour l'instant non utilisée car nous simulons la réponse
+      // final url = apiUrl.isNotEmpty ? apiUrl : 'https://api.foodguess.com/aliments';
+
+      // Simulation de l'appel API pour le moment (à remplacer par un vrai appel HTTP)
+      // En utilisant http package: final response = await http.get(Uri.parse(url));
+      await Future.delayed(
+          const Duration(seconds: 1)); // Simulation d'un délai réseau
+
+      // Exemple de données simulées (à remplacer par la vraie réponse de l'API)
+      final jsonResponse = '''
+      {
+        "items": [
+          {"name": "Saumon", "description": "Poisson gras riche en oméga-3", "points": 3},
+          {"name": "Avocat", "description": "Fruit riche en bonnes graisses", "points": 2},
+          {"name": "Chocolat noir", "description": "Douceur amère", "points": 2},
+          {"name": "Quinoa", "description": "Graine riche en protéines", "points": 1},
+          {"name": "Brocoli", "description": "Légume vert nutritif", "points": 1}
+        ]
+      }
+      ''';
+
+      final Map<String, dynamic> data = jsonDecode(jsonResponse);
+      final List<dynamic> itemsJson = data['items'];
+
+      if (itemsJson.isEmpty) {
+        debugPrint('Aucun aliment trouvé dans la réponse de l\'API');
+        return null;
       }
 
-      return newItems;
+      // Convertir les données JSON en objets BetItem pour la prévisualisation
+      final List<BetItem> apiItems = itemsJson.map((json) {
+        return BetItem(
+          id: const Uuid().v4(), // ID temporaire pour la prévisualisation
+          name: json['name'],
+          description: json['description'] ?? '',
+          points: json['points'] ?? 1,
+        );
+      }).toList();
+
+      // Identifier ceux qui existent déjà dans la base locale
+      final existingItems = await _betItemStorage.loadBetItems();
+      final existingNames =
+          existingItems.map((item) => item.name.toLowerCase()).toSet();
+
+      // Ajouter une indication dans la description pour les éléments qui existent déjà
+      for (var item in apiItems) {
+        if (existingNames.contains(item.name.toLowerCase())) {
+          item = item.copyWith(
+            description: '${item.description} [Déjà présent dans votre liste]',
+          );
+        }
+      }
+
+      return apiItems;
     } catch (e) {
-      debugPrint(
-          'Erreur lors de la prévisualisation des aliments depuis CSV: $e');
+      debugPrint('Erreur lors de la prévisualisation depuis l\'API: $e');
       return null;
     }
   }
@@ -761,4 +740,10 @@ class DataExportImportService {
         data.containsKey('players') &&
         data.containsKey('gameHistory');
   }
+
+  previewBetItemsImport() {}
+
+  previewBetItemsImportFromCSV() {}
+
+  previewPlayersImport() {}
 }

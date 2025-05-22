@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, duplicate_ignore
+
 import 'package:flutter/material.dart';
 import '../services/data_export_import_service.dart';
 import '../models/bet_item.dart';
@@ -498,7 +500,8 @@ class _DataExportImportScreenState extends State<DataExportImportScreen> {
               SizedBox(height: 8),
               Text(
                 '• JSON: Format complet qui préserve toutes les données\n'
-                '• CSV: Format simplifié compatible avec les tableurs (Excel, Google Sheets, etc.)',
+                '• CSV: Format simplifié compatible avec les tableurs (Excel, Google Sheets, etc.)\n'
+                '• API: Importation directe depuis notre service en ligne',
               ),
               SizedBox(height: 16),
               Text(
@@ -520,6 +523,16 @@ class _DataExportImportScreenState extends State<DataExportImportScreen> {
               Text(
                 'Lors de l\'importation, les éléments ayant des noms identiques ne seront pas dupliqués. '
                 'Assurez-vous que le fichier que vous importez provient d\'une source fiable.',
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Importation via API:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'L\'importation via API vous permet de récupérer des aliments depuis notre service en ligne. '
+                'Cette fonctionnalité nécessite une connexion Internet et sera pleinement opérationnelle prochainement.',
               ),
             ],
           ),
@@ -594,11 +607,13 @@ class _DataExportImportScreenState extends State<DataExportImportScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceVariant,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.grey.shade300),
                     boxShadow: [
                       BoxShadow(
+                        // ignore: duplicate_ignore
+                        // ignore: deprecated_member_use
                         color: Colors.black.withOpacity(0.05),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
@@ -754,12 +769,14 @@ class _DataExportImportScreenState extends State<DataExportImportScreen> {
                       Theme.of(context)
                           .colorScheme
                           .primaryContainer
+                          // ignore: deprecated_member_use
                           .withOpacity(0.7),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(isSmallScreen ? 10 : 12),
                   boxShadow: [
                     BoxShadow(
+                      // ignore: deprecated_member_use
                       color: Colors.black.withOpacity(0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
@@ -968,10 +985,14 @@ class _DataExportImportScreenState extends State<DataExportImportScreen> {
                                   _previewBetItems();
                                 } else if (value == 'csv_preview') {
                                   _previewBetItemsCSV();
+                                } else if (value == 'api_preview') {
+                                  _previewBetItemsFromApi();
                                 } else if (value == 'json_direct') {
                                   _importBetItems();
                                 } else if (value == 'csv_direct') {
                                   _importBetItemsFromCSV();
+                                } else if (value == 'api_direct') {
+                                  _importBetItemsFromApi();
                                 }
                               },
                               tooltip: 'Options d\'importation',
@@ -987,12 +1008,21 @@ class _DataExportImportScreenState extends State<DataExportImportScreen> {
                                       Text('Prévisualiser puis importer (CSV)'),
                                 ),
                                 const PopupMenuItem(
+                                  value: 'api_preview',
+                                  child:
+                                      Text('Prévisualiser puis importer (API)'),
+                                ),
+                                const PopupMenuItem(
                                   value: 'json_direct',
                                   child: Text('Importer directement (JSON)'),
                                 ),
                                 const PopupMenuItem(
                                   value: 'csv_direct',
                                   child: Text('Importer directement (CSV)'),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'api_direct',
+                                  child: Text('Importer directement (API)'),
                                 ),
                               ],
                               child: _buildActionButton(
@@ -1487,5 +1517,147 @@ class _DataExportImportScreenState extends State<DataExportImportScreen> {
         _isSuccess = false;
       });
     }
+  }
+
+  // Importer des aliments depuis l'API
+  Future<void> _importBetItemsFromApi() async {
+    setState(() {
+      _isImporting = true;
+      _lastActionResult = null;
+    });
+
+    try {
+      final success = await _service.importBetItemsFromApi();
+
+      setState(() {
+        _isImporting = false;
+        if (success) {
+          _lastActionResult =
+              'Les aliments ont été importés depuis l\'API avec succès.';
+          _isSuccess = true;
+        } else {
+          _lastActionResult =
+              'L\'importation des aliments depuis l\'API a échoué ou aucun nouvel aliment n\'a été trouvé.';
+          _isSuccess = false;
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isImporting = false;
+        _lastActionResult = 'Erreur lors de l\'importation depuis l\'API: $e';
+        _isSuccess = false;
+      });
+    }
+  }
+
+  // Prévisualiser les aliments depuis l'API avant import
+  Future<void> _previewBetItemsFromApi() async {
+    setState(() {
+      _isImporting = true;
+      _lastActionResult = null;
+    });
+
+    try {
+      final items = await _service.previewBetItemsFromApi();
+
+      setState(() {
+        _isImporting = false;
+      });
+
+      if (items != null && items.isNotEmpty) {
+        _showPreviewDialog(
+          'Aliments disponibles via l\'API',
+          _buildBetItemsPreviewFromApi(items),
+          () {
+            _importBetItemsFromApi();
+          },
+        );
+      } else {
+        setState(() {
+          _lastActionResult =
+              'Aucun aliment disponible via l\'API ou erreur de connexion.';
+          _isSuccess = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isImporting = false;
+        _lastActionResult = 'Erreur lors de la connexion à l\'API: $e';
+        _isSuccess = false;
+      });
+    }
+  }
+
+  // Construire la prévisualisation des aliments de l'API
+  Widget _buildBetItemsPreviewFromApi(List<BetItem> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Text(
+            '${items.length} aliment${items.length > 1 ? "s" : ""} disponible${items.length > 1 ? "s" : ""} dans l\'API',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              final bool isAlreadyExists =
+                  item.description.contains('[Déjà présent dans votre liste]');
+
+              return Card(
+                elevation: 1,
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                color: isAlreadyExists ? Colors.grey.shade100 : Colors.white,
+                child: ListTile(
+                  title: Text(item.name),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (item.description.isNotEmpty && !isAlreadyExists)
+                        Text(item.description),
+                      if (isAlreadyExists)
+                        Text(
+                          'Déjà présent dans votre liste',
+                          style: TextStyle(
+                            fontStyle: FontStyle.italic,
+                            color: Colors.red.shade800,
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${item.points} pt${item.points > 1 ? 's' : ''}',
+                          style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 }
