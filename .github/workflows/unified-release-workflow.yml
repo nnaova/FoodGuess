@@ -108,6 +108,27 @@ jobs:
           dart --version
           echo "Vérification de la configuration du projet..."
 
+      - name: Configure Android NDK version
+        run: |
+          echo "Verification de la configuration NDK actuelle..."
+          cat android/app/build.gradle.kts
+          
+          # S'assurer que la version NDK est correctement configurée et bien positionnée
+          if ! grep -q "ndkVersion = \"27.0.12077973\"" android/app/build.gradle.kts; then
+            echo "Mise à jour de la version NDK dans build.gradle.kts"
+            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = flutter.compileSdkVersion\n    ndkVersion = "27.0.12077973"  \/\/ Mise à jour de la version NDK/' android/app/build.gradle.kts
+          elif ! grep -q "ndkVersion.*compileSdk" android/app/build.gradle.kts; then
+            # La version existe mais pourrait être mal positionnée dans la section android{}
+            echo "Reconfiguration de la position de ndkVersion dans build.gradle.kts..."
+            sed -i '/^android {/,/^}/ {
+              s/ndkVersion = "27.0.12077973".*//
+              /compileSdk = flutter.compileSdkVersion/ a\    ndkVersion = "27.0.12077973"  // Mise à jour de la version NDK
+            }' android/app/build.gradle.kts
+          fi
+          
+          echo "Configuration NDK après modification:"
+          cat android/app/build.gradle.kts
+
       # Modification temporaire du pubspec.yaml pour la compatibilité
       - name: Ajuster les dépendances pour la compatibilité
         run: |
@@ -283,7 +304,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.19.0"
+          flutter-version: "3.32.0"
           channel: "stable"
 
       - name: Display Flutter & Dart versions
@@ -297,7 +318,7 @@ jobs:
           cp pubspec.yaml pubspec.yaml.bak
 
           # Méthode compatible avec macOS pour modifier pubspec.yaml
-          echo "Modification des dépendances pour la compatibilité avec Flutter 3.19.0..."
+          echo "Modification des dépendances pour la compatibilité avec Flutter 3.32.0..."
 
           # Utiliser awk qui est plus compatible entre les systèmes
           cat pubspec.yaml | awk '
