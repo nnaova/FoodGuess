@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:csv/csv.dart';
 import 'package:uuid/uuid.dart';
+import 'package:http/http.dart' as http;
 import '../models/bet_item.dart';
 import '../models/player.dart';
 import '../models/game_history_entry.dart';
@@ -21,8 +22,9 @@ class DataExportImportService {
 
   /// Exporte toutes les données de l'application vers un fichier JSON
   ///
-  /// [exportType] peut être "share" pour partager le fichier ou "local" pour l'enregistrer localement
-  Future<String?> exportAllData({String exportType = "share"}) async {
+  /// [exportType] peut être "share" pour partager le fichier ou "custom" pour permettre
+  /// à l'utilisateur de choisir l'emplacement de sauvegarde
+  Future<String?> exportAllData({String exportType = "custom"}) async {
     try {
       // Récupérer les données
       final betItems = await _betItemStorage.loadBetItems();
@@ -41,27 +43,46 @@ class DataExportImportService {
       // Convertir en JSON
       final jsonString = jsonEncode(exportData);
 
-      // Sauvegarder dans un fichier
-      final directory = await getExternalStorageDirectory() ??
-          await getApplicationDocumentsDirectory();
+      String? filePath;
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'food_guess_export_$timestamp.json';
-      final file = File('${directory.path}/$fileName');
-      await file.writeAsString(jsonString);
 
       if (exportType == "share") {
+        // Créer un fichier temporaire pour le partage
+        final directory = await getTemporaryDirectory();
+        final file = File('${directory.path}/$fileName');
+        await file.writeAsString(jsonString);
+        filePath = file.path;
+
         // Partager le fichier
         // ignore: deprecated_member_use
         await Share.shareXFiles(
-          [XFile(file.path)],
+          [XFile(filePath)],
           text: 'Exportation des données Food Guess',
         );
-      } else if (exportType == "local") {
-        // Télécharger localement - ne rien faire de plus car le fichier est déjà enregistré
-        debugPrint('Fichier sauvegardé localement à: ${file.path}');
+      } else if (exportType == "custom") {
+        // Permettre à l'utilisateur de choisir l'emplacement
+        String? outputFile = await FilePicker.platform.saveFile(
+          dialogTitle: 'Enregistrer le fichier d\'exportation',
+          fileName: fileName,
+          type: FileType.custom,
+          allowedExtensions: ['json'],
+          // Essayer d'ouvrir le dossier de téléchargements par défaut si possible
+          initialDirectory: await _getDownloadsDirectory(),
+        );
+
+        if (outputFile != null) {
+          final file = File(outputFile);
+          await file.writeAsString(jsonString);
+          filePath = file.path;
+          debugPrint('Fichier sauvegardé à l\'emplacement choisi: $filePath');
+        } else {
+          debugPrint('Exportation annulée par l\'utilisateur');
+          return null;
+        }
       }
 
-      return file.path;
+      return filePath;
     } catch (e) {
       debugPrint('Erreur lors de l\'exportation des données: $e');
       return null;
@@ -132,7 +153,8 @@ class DataExportImportService {
 
   /// Exporte uniquement les aliments vers un fichier JSON
   ///
-  /// [exportType] peut être "share" pour partager le fichier ou "local" pour l'enregistrer localement
+  /// [exportType] peut être "share" pour partager le fichier, "local" pour l'enregistrer localement
+  /// ou "custom" pour permettre à l'utilisateur de choisir l'emplacement
   Future<String?> exportBetItems({String exportType = "share"}) async {
     try {
       final betItems = await _betItemStorage.loadBetItems();
@@ -144,25 +166,53 @@ class DataExportImportService {
 
       final jsonString = jsonEncode(exportData);
 
-      final directory = await getExternalStorageDirectory() ??
-          await getApplicationDocumentsDirectory();
+      String? filePath;
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'food_guess_aliments_$timestamp.json';
-      final file = File('${directory.path}/$fileName');
-      await file.writeAsString(jsonString);
 
       if (exportType == "share") {
+        // Créer un fichier temporaire pour le partage
+        final directory = await getTemporaryDirectory();
+        final file = File('${directory.path}/$fileName');
+        await file.writeAsString(jsonString);
+        filePath = file.path;
+
+        // Partager le fichier
         // ignore: deprecated_member_use
         await Share.shareXFiles(
-          [XFile(file.path)],
+          [XFile(filePath)],
           text: 'Exportation des aliments Food Guess',
         );
       } else if (exportType == "local") {
-        // Télécharger localement - ne rien faire de plus car le fichier est déjà enregistré
-        debugPrint('Fichier sauvegardé localement à: ${file.path}');
+        // Enregistrement avec emplacement par défaut
+        final directory = await getExternalStorageDirectory() ??
+            await getApplicationDocumentsDirectory();
+        final file = File('${directory.path}/$fileName');
+        await file.writeAsString(jsonString);
+        filePath = file.path;
+
+        debugPrint('Fichier sauvegardé localement à: $filePath');
+      } else if (exportType == "custom") {
+        // Permettre à l'utilisateur de choisir l'emplacement
+        String? outputFile = await FilePicker.platform.saveFile(
+          dialogTitle: 'Enregistrer les aliments',
+          fileName: fileName,
+          type: FileType.custom,
+          allowedExtensions: ['json'],
+        );
+
+        if (outputFile != null) {
+          final file = File(outputFile);
+          await file.writeAsString(jsonString);
+          filePath = file.path;
+          debugPrint('Fichier sauvegardé à l\'emplacement choisi: $filePath');
+        } else {
+          debugPrint('Exportation annulée par l\'utilisateur');
+          return null;
+        }
       }
 
-      return file.path;
+      return filePath;
     } catch (e) {
       debugPrint('Erreur lors de l\'exportation des aliments: $e');
       return null;
@@ -221,7 +271,8 @@ class DataExportImportService {
 
   /// Exporte uniquement les joueurs vers un fichier JSON
   ///
-  /// [exportType] peut être "share" pour partager le fichier ou "local" pour l'enregistrer localement
+  /// [exportType] peut être "share" pour partager le fichier, "local" pour l'enregistrer localement
+  /// ou "custom" pour permettre à l'utilisateur de choisir l'emplacement
   Future<String?> exportPlayers({String exportType = "share"}) async {
     try {
       final players = await _playerStorage.loadPlayers();
@@ -233,25 +284,53 @@ class DataExportImportService {
 
       final jsonString = jsonEncode(exportData);
 
-      final directory = await getExternalStorageDirectory() ??
-          await getApplicationDocumentsDirectory();
+      String? filePath;
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'food_guess_joueurs_$timestamp.json';
-      final file = File('${directory.path}/$fileName');
-      await file.writeAsString(jsonString);
 
       if (exportType == "share") {
+        // Créer un fichier temporaire pour le partage
+        final directory = await getTemporaryDirectory();
+        final file = File('${directory.path}/$fileName');
+        await file.writeAsString(jsonString);
+        filePath = file.path;
+
+        // Partager le fichier
         // ignore: deprecated_member_use
         await Share.shareXFiles(
-          [XFile(file.path)],
+          [XFile(filePath)],
           text: 'Exportation des joueurs Food Guess',
         );
       } else if (exportType == "local") {
-        // Télécharger localement - ne rien faire de plus car le fichier est déjà enregistré
-        debugPrint('Fichier sauvegardé localement à: ${file.path}');
+        // Enregistrement avec emplacement par défaut
+        final directory = await getExternalStorageDirectory() ??
+            await getApplicationDocumentsDirectory();
+        final file = File('${directory.path}/$fileName');
+        await file.writeAsString(jsonString);
+        filePath = file.path;
+
+        debugPrint('Fichier sauvegardé localement à: $filePath');
+      } else if (exportType == "custom") {
+        // Permettre à l'utilisateur de choisir l'emplacement
+        String? outputFile = await FilePicker.platform.saveFile(
+          dialogTitle: 'Enregistrer les joueurs',
+          fileName: fileName,
+          type: FileType.custom,
+          allowedExtensions: ['json'],
+        );
+
+        if (outputFile != null) {
+          final file = File(outputFile);
+          await file.writeAsString(jsonString);
+          filePath = file.path;
+          debugPrint('Fichier sauvegardé à l\'emplacement choisi: $filePath');
+        } else {
+          debugPrint('Exportation annulée par l\'utilisateur');
+          return null;
+        }
       }
 
-      return file.path;
+      return filePath;
     } catch (e) {
       debugPrint('Erreur lors de l\'exportation des joueurs: $e');
       return null;
@@ -310,7 +389,8 @@ class DataExportImportService {
 
   /// Exporte les aliments vers un fichier CSV
   ///
-  /// [exportType] peut être "share" pour partager le fichier ou "local" pour l'enregistrer localement
+  /// [exportType] peut être "share" pour partager le fichier, "local" pour l'enregistrer localement
+  /// ou "custom" pour permettre à l'utilisateur de choisir l'emplacement
   Future<String?> exportBetItemsAsCSV({String exportType = "share"}) async {
     try {
       final betItems = await _betItemStorage.loadBetItems();
@@ -329,27 +409,54 @@ class DataExportImportService {
       // Convertir en CSV
       String csv = const ListToCsvConverter().convert(rows);
 
-      // Sauvegarder dans un fichier
-      final directory = await getExternalStorageDirectory() ??
-          await getApplicationDocumentsDirectory();
+      String? filePath;
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'food_guess_aliments_$timestamp.csv';
-      final file = File('${directory.path}/$fileName');
-      await file.writeAsString(csv);
 
       if (exportType == "share") {
+        // Créer un fichier temporaire pour le partage
+        final directory = await getTemporaryDirectory();
+        final file = File('${directory.path}/$fileName');
+        await file.writeAsString(csv);
+        filePath = file.path;
+
         // Partager le fichier
         // ignore: deprecated_member_use
         await Share.shareXFiles(
-          [XFile(file.path)],
+          [XFile(filePath)],
           text: 'Exportation des aliments Food Guess (CSV)',
         );
       } else if (exportType == "local") {
-        // Télécharger localement - ne rien faire de plus car le fichier est déjà enregistré
-        debugPrint('Fichier sauvegardé localement à: ${file.path}');
+        // Enregistrement avec emplacement par défaut
+        final directory = await getExternalStorageDirectory() ??
+            await getApplicationDocumentsDirectory();
+        final file = File('${directory.path}/$fileName');
+        await file.writeAsString(csv);
+        filePath = file.path;
+
+        debugPrint('Fichier sauvegardé localement à: $filePath');
+      } else if (exportType == "custom") {
+        // Permettre à l'utilisateur de choisir l'emplacement
+        String? outputFile = await FilePicker.platform.saveFile(
+          dialogTitle: 'Enregistrer les aliments (CSV)',
+          fileName: fileName,
+          type: FileType.custom,
+          allowedExtensions: ['csv'],
+        );
+
+        if (outputFile != null) {
+          final file = File(outputFile);
+          await file.writeAsString(csv);
+          filePath = file.path;
+          debugPrint(
+              'Fichier CSV sauvegardé à l\'emplacement choisi: $filePath');
+        } else {
+          debugPrint('Exportation CSV annulée par l\'utilisateur');
+          return null;
+        }
       }
 
-      return file.path;
+      return filePath;
     } catch (e) {
       debugPrint('Erreur lors de l\'exportation des aliments en CSV: $e');
       return null;
@@ -358,7 +465,8 @@ class DataExportImportService {
 
   /// Exporte les joueurs vers un fichier CSV
   ///
-  /// [exportType] peut être "share" pour partager le fichier ou "local" pour l'enregistrer localement
+  /// [exportType] peut être "share" pour partager le fichier, "local" pour l'enregistrer localement
+  /// ou "custom" pour permettre à l'utilisateur de choisir l'emplacement
   Future<String?> exportPlayersAsCSV({String exportType = "share"}) async {
     try {
       final players = await _playerStorage.loadPlayers();
@@ -377,27 +485,54 @@ class DataExportImportService {
       // Convertir en CSV
       String csv = const ListToCsvConverter().convert(rows);
 
-      // Sauvegarder dans un fichier
-      final directory = await getExternalStorageDirectory() ??
-          await getApplicationDocumentsDirectory();
+      String? filePath;
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'food_guess_joueurs_$timestamp.csv';
-      final file = File('${directory.path}/$fileName');
-      await file.writeAsString(csv);
 
       if (exportType == "share") {
+        // Créer un fichier temporaire pour le partage
+        final directory = await getTemporaryDirectory();
+        final file = File('${directory.path}/$fileName');
+        await file.writeAsString(csv);
+        filePath = file.path;
+
         // Partager le fichier
         // ignore: deprecated_member_use
         await Share.shareXFiles(
-          [XFile(file.path)],
+          [XFile(filePath)],
           text: 'Exportation des joueurs Food Guess (CSV)',
         );
       } else if (exportType == "local") {
-        // Télécharger localement - ne rien faire de plus car le fichier est déjà enregistré
-        debugPrint('Fichier sauvegardé localement à: ${file.path}');
+        // Enregistrement avec emplacement par défaut
+        final directory = await getExternalStorageDirectory() ??
+            await getApplicationDocumentsDirectory();
+        final file = File('${directory.path}/$fileName');
+        await file.writeAsString(csv);
+        filePath = file.path;
+
+        debugPrint('Fichier sauvegardé localement à: $filePath');
+      } else if (exportType == "custom") {
+        // Permettre à l'utilisateur de choisir l'emplacement
+        String? outputFile = await FilePicker.platform.saveFile(
+          dialogTitle: 'Enregistrer les joueurs (CSV)',
+          fileName: fileName,
+          type: FileType.custom,
+          allowedExtensions: ['csv'],
+        );
+
+        if (outputFile != null) {
+          final file = File(outputFile);
+          await file.writeAsString(csv);
+          filePath = file.path;
+          debugPrint(
+              'Fichier CSV sauvegardé à l\'emplacement choisi: $filePath');
+        } else {
+          debugPrint('Exportation CSV annulée par l\'utilisateur');
+          return null;
+        }
       }
 
-      return file.path;
+      return filePath;
     } catch (e) {
       debugPrint('Erreur lors de l\'exportation des joueurs en CSV: $e');
       return null;
@@ -505,232 +640,93 @@ class DataExportImportService {
     }
   }
 
-  /// Importe des aliments depuis une API
-  ///
-  /// Cette méthode se connecte à une API externe pour récupérer une liste d'aliments
-  /// et les importe dans l'application.
-  ///
-  /// Retourne true si l'importation a réussi, false sinon
-  Future<bool> importBetItemsFromApi({String apiUrl = ''}) async {
+  /// Importe les joueurs depuis un fichier CSV
+  Future<bool> importPlayersFromCSV() async {
     try {
-      // URL par défaut pour l'API (à remplacer quand l'API sera prête)
-      // Pour l'instant non utilisée car nous simulons la réponse
-      // final url = apiUrl.isNotEmpty ? apiUrl : 'https://api.foodguess.com/aliments';
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+      );
 
-      // Simulation de l'appel API pour le moment (à remplacer par un vrai appel HTTP)
-      // En utilisant http package: await http.get(Uri.parse(url));
-      await Future.delayed(
-          const Duration(seconds: 1)); // Simulation d'un délai réseau
-
-      // Exemple de données simulées (à remplacer par la vraie réponse de l'API)
-      final jsonResponse = '''
-      {
-        "items": [
-          {"name": "Saumon", "description": "Poisson gras riche en oméga-3", "points": 3},
-          {"name": "Avocat", "description": "Fruit riche en bonnes graisses", "points": 2},
-          {"name": "Chocolat noir", "description": "Douceur amère", "points": 2}
-        ]
-      }
-      ''';
-
-      final Map<String, dynamic> data = jsonDecode(jsonResponse);
-      final List<dynamic> itemsJson = data['items'];
-
-      if (itemsJson.isEmpty) {
-        debugPrint('Aucun aliment trouvé dans la réponse de l\'API');
+      if (result == null || result.files.isEmpty) {
         return false;
       }
 
-      // Convertir les données JSON en objets BetItem
-      final List<BetItem> apiItems = itemsJson.map((json) {
-        return BetItem(
+      final filePath = result.files.single.path;
+      if (filePath == null) {
+        return false;
+      }
+
+      final file = File(filePath);
+      final csvString = await file.readAsString();
+
+      // Convertir le CSV en liste de lignes
+      List<List<dynamic>> rows = const CsvToListConverter().convert(csvString);
+
+      if (rows.isEmpty || rows.length < 2) {
+        // Fichier vide ou sans données
+        return false;
+      }
+
+      // Vérifier l'en-tête
+      List<dynamic> headers = rows[0];
+      if (headers.length < 2 || !headers.contains('Nom')) {
+        // En-tête invalide
+        return false;
+      }
+
+      // Récupérer les index des colonnes
+      int nameIndex = headers.indexOf('Nom');
+
+      int scoreIndex = headers.indexOf('Score');
+      if (scoreIndex == -1) scoreIndex = headers.indexOf('Score');
+
+      // Convertir les lignes en objets Player
+      List<Player> newPlayers = [];
+      for (int i = 1; i < rows.length; i++) {
+        if (rows[i].length <= nameIndex) continue;
+
+        String name = rows[i][nameIndex].toString();
+        if (name.isEmpty) continue;
+
+        int score = 0;
+        if (scoreIndex != -1 && rows[i].length > scoreIndex) {
+          try {
+            score = int.parse(rows[i][scoreIndex].toString());
+          } catch (e) {
+            // Ignorer les erreurs de conversion
+          }
+        }
+
+        newPlayers.add(Player(
           id: const Uuid().v4(),
-          name: json['name'],
-          description: json['description'] ?? '',
-          points: json['points'] ?? 1,
-        );
-      }).toList();
+          name: name,
+          score: score,
+        ));
+      }
 
-      // Fusion avec les données existantes pour éviter les doublons
-      final existingItems = await _betItemStorage.loadBetItems();
+      if (newPlayers.isEmpty) {
+        return false;
+      }
+
+      // Option de fusion avec les données existantes
+      final existingPlayers = await _playerStorage.loadPlayers();
+
+      // Trouver des joueurs avec le même nom
       final existingNames =
-          existingItems.map((item) => item.name.toLowerCase()).toSet();
-
-      // Filtrer les nouveaux aliments pour éviter les doublons
-      final newItems = apiItems
-          .where((item) => !existingNames.contains(item.name.toLowerCase()))
+          existingPlayers.map((player) => player.name.toLowerCase()).toSet();
+      final uniqueNewPlayers = newPlayers
+          .where((player) => !existingNames.contains(player.name.toLowerCase()))
           .toList();
 
-      // Ajouter uniquement les nouveaux aliments
-      existingItems.addAll(newItems);
-      await _betItemStorage.saveBetItems(existingItems);
+      // Ajouter uniquement les nouveaux joueurs
+      existingPlayers.addAll(uniqueNewPlayers);
+      await _playerStorage.savePlayers(existingPlayers);
 
-      return newItems.isNotEmpty;
+      return true;
     } catch (e) {
-      debugPrint('Erreur lors de l\'importation depuis l\'API: $e');
+      debugPrint('Erreur lors de l\'importation des joueurs depuis CSV: $e');
       return false;
-    }
-  }
-
-  /// Prévisualiser les aliments disponibles depuis l'API avant de les importer
-  Future<List<BetItem>?> previewBetItemsFromApi({String apiUrl = ''}) async {
-    try {
-      // URL par défaut pour l'API (à remplacer quand l'API sera prête)
-      // Pour l'instant non utilisée car nous simulons la réponse
-      // final url = apiUrl.isNotEmpty ? apiUrl : 'https://api.foodguess.com/aliments';
-
-      // Simulation de l'appel API pour le moment (à remplacer par un vrai appel HTTP)
-      // En utilisant http package: final response = await http.get(Uri.parse(url));
-      await Future.delayed(
-          const Duration(seconds: 1)); // Simulation d'un délai réseau
-
-      // Exemple de données simulées (à remplacer par la vraie réponse de l'API)
-      final jsonResponse = '''
-      {
-        "items": [
-          {"name": "Saumon", "description": "Poisson gras riche en oméga-3", "points": 3},
-          {"name": "Avocat", "description": "Fruit riche en bonnes graisses", "points": 2},
-          {"name": "Chocolat noir", "description": "Douceur amère", "points": 2},
-          {"name": "Quinoa", "description": "Graine riche en protéines", "points": 1},
-          {"name": "Brocoli", "description": "Légume vert nutritif", "points": 1}
-        ]
-      }
-      ''';
-
-      final Map<String, dynamic> data = jsonDecode(jsonResponse);
-      final List<dynamic> itemsJson = data['items'];
-
-      if (itemsJson.isEmpty) {
-        debugPrint('Aucun aliment trouvé dans la réponse de l\'API');
-        return null;
-      }
-
-      // Convertir les données JSON en objets BetItem pour la prévisualisation
-      final List<BetItem> apiItems = itemsJson.map((json) {
-        return BetItem(
-          id: const Uuid().v4(), // ID temporaire pour la prévisualisation
-          name: json['name'],
-          description: json['description'] ?? '',
-          points: json['points'] ?? 1,
-        );
-      }).toList();
-
-      // Identifier ceux qui existent déjà dans la base locale
-      final existingItems = await _betItemStorage.loadBetItems();
-      final existingNames =
-          existingItems.map((item) => item.name.toLowerCase()).toSet();
-
-      // Ajouter une indication dans la description pour les éléments qui existent déjà
-      for (var item in apiItems) {
-        if (existingNames.contains(item.name.toLowerCase())) {
-          item = item.copyWith(
-            description: '${item.description} [Déjà présent dans votre liste]',
-          );
-        }
-      }
-
-      return apiItems;
-    } catch (e) {
-      debugPrint('Erreur lors de la prévisualisation depuis l\'API: $e');
-      return null;
-    }
-  }
-
-  /// Exporte les aliments vers un fichier texte simple
-  Future<String?> exportBetItemsAsText({String exportType = "share"}) async {
-    try {
-      final betItems = await _betItemStorage.loadBetItems();
-
-      // Préparer les données pour le format texte
-      StringBuffer buffer = StringBuffer();
-      buffer.writeln("LISTE DES ALIMENTS FOOD GUESS");
-      buffer.writeln("Exporté le ${DateTime.now().toString().split('.')[0]}");
-      buffer.writeln("-----------------------------------");
-      buffer.writeln();
-
-      // Formatage des aliments
-      for (int i = 0; i < betItems.length; i++) {
-        var item = betItems[i];
-        buffer.writeln("${i + 1}. ${item.name} (${item.points} points)");
-        if (item.description.isNotEmpty) {
-          buffer.writeln("   Description: ${item.description}");
-        }
-        buffer.writeln();
-      }
-
-      // Sauvegarder dans un fichier
-      final directory = await getExternalStorageDirectory() ??
-          await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = 'food_guess_aliments_$timestamp.txt';
-      final file = File('${directory.path}/$fileName');
-      await file.writeAsString(buffer.toString());
-
-      if (exportType == "share") {
-        // Partager le fichier
-        // ignore: deprecated_member_use
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          text: 'Exportation des aliments Food Guess (Texte)',
-        );
-      } else if (exportType == "local") {
-        // Télécharger localement - ne rien faire de plus car le fichier est déjà enregistré
-        debugPrint('Fichier sauvegardé localement à: ${file.path}');
-      }
-
-      return file.path;
-    } catch (e) {
-      debugPrint('Erreur lors de l\'exportation des aliments en texte: $e');
-      return null;
-    }
-  }
-
-  /// Exporte les joueurs vers un fichier texte simple
-  ///
-  /// [exportType] peut être "share" pour partager le fichier ou "local" pour l'enregistrer localement
-  Future<String?> exportPlayersAsText({String exportType = "share"}) async {
-    try {
-      final players = await _playerStorage.loadPlayers();
-
-      // Préparer les données pour le format texte
-      StringBuffer buffer = StringBuffer();
-      buffer.writeln("LISTE DES JOUEURS FOOD GUESS");
-      buffer.writeln("Exporté le ${DateTime.now().toString().split('.')[0]}");
-      buffer.writeln("-----------------------------------");
-      buffer.writeln();
-
-      // Formatage des joueurs
-      for (int i = 0; i < players.length; i++) {
-        var player = players[i];
-        buffer.writeln("${i + 1}. ${player.name}");
-        buffer.writeln("   Score: ${player.score}");
-        buffer.writeln();
-      }
-
-      // Sauvegarder dans un fichier
-      final directory = await getExternalStorageDirectory() ??
-          await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = 'food_guess_joueurs_$timestamp.txt';
-      final file = File('${directory.path}/$fileName');
-      await file.writeAsString(buffer.toString());
-
-      if (exportType == "share") {
-        // Partager le fichier
-        // ignore: deprecated_member_use
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          text: 'Exportation des joueurs Food Guess (Texte)',
-        );
-      } else if (exportType == "local") {
-        // Télécharger localement - ne rien faire de plus car le fichier est déjà enregistré
-        debugPrint('Fichier sauvegardé localement à: ${file.path}');
-      }
-
-      return file.path;
-    } catch (e) {
-      debugPrint('Erreur lors de l\'exportation des joueurs en texte: $e');
-      return null;
     }
   }
 
@@ -741,9 +737,142 @@ class DataExportImportService {
         data.containsKey('gameHistory');
   }
 
+  Future<String?> _getDownloadsDirectory() async {
+    String? downloadsPath;
+
+    try {
+      // Essayer d'obtenir le chemin des téléchargements à partir du répertoire externe
+      final externalDir = await getExternalStorageDirectory();
+      if (externalDir != null) {
+        downloadsPath = '${externalDir.path}/Download';
+      }
+    } catch (e) {
+      debugPrint(
+          'Erreur lors de la récupération du répertoire de téléchargements: $e');
+    }
+
+    return downloadsPath;
+  }
+
   previewBetItemsImport() {}
 
   previewBetItemsImportFromCSV() {}
 
   previewPlayersImport() {}
+
+  exportPlayersAsText({required String exportType}) {}
+
+  exportBetItemsAsText({required String exportType}) {}
+
+  /// Importe des aliments depuis l'API
+  Future<bool> importBetItemsFromApi() async {
+    try {
+      final List<BetItem>? apiItems = await _fetchBetItemsFromApi();
+
+      if (apiItems == null || apiItems.isEmpty) {
+        return false;
+      }
+
+      // Fusionner avec les données existantes
+      final existingItems = await _betItemStorage.loadBetItems();
+
+      // Trouver des éléments avec le même nom
+      final existingNames =
+          existingItems.map((item) => item.name.toLowerCase()).toSet();
+      final newItems = apiItems
+          .where((item) => !existingNames.contains(item.name.toLowerCase()))
+          .toList();
+
+      if (newItems.isEmpty) {
+        debugPrint('Aucun nouvel aliment à importer depuis l\'API');
+        return false;
+      }
+
+      // Ajouter uniquement les nouveaux éléments
+      existingItems.addAll(newItems);
+      await _betItemStorage.saveBetItems(existingItems);
+
+      debugPrint('${newItems.length} aliments importés depuis l\'API');
+      return true;
+    } catch (e) {
+      debugPrint(
+          'Erreur lors de l\'importation des aliments depuis l\'API: $e');
+      return false;
+    }
+  }
+
+  /// Prévisualise les aliments disponibles depuis l'API
+  Future<List<BetItem>?> previewBetItemsFromApi() async {
+    try {
+      final List<BetItem>? apiItems = await _fetchBetItemsFromApi();
+
+      if (apiItems == null || apiItems.isEmpty) {
+        return null;
+      }
+
+      // Marquer les éléments déjà existants
+      final existingItems = await _betItemStorage.loadBetItems();
+      final existingNames =
+          existingItems.map((item) => item.name.toLowerCase()).toSet();
+
+      for (var item in apiItems) {
+        if (existingNames.contains(item.name.toLowerCase())) {
+          item = item.copyWith(
+              description: item.description.isEmpty
+                  ? '[Déjà présent dans votre liste]'
+                  : '${item.description} [Déjà présent dans votre liste]');
+        }
+      }
+
+      return apiItems;
+    } catch (e) {
+      debugPrint(
+          'Erreur lors de la prévisualisation des aliments depuis l\'API: $e');
+      return null;
+    }
+  }
+
+  /// Récupère les aliments depuis l'API
+  Future<List<BetItem>?> _fetchBetItemsFromApi() async {
+    try {
+      final client = http.Client();
+      final response = await client.get(
+        Uri.parse('https://food-guess-api.vercel.app/api/foods'),
+      );
+
+      if (response.statusCode != 200) {
+        debugPrint('Erreur API: ${response.statusCode} ${response.body}');
+        return null;
+      }
+
+      // Analyser la réponse JSON qui contient un objet avec un tableau "betItems"
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      final List<dynamic> betItems = jsonResponse['betItems'] ?? [];
+
+      final List<BetItem> apiItems = betItems.map((item) {
+        return BetItem(
+          id: item['id'] ?? const Uuid().v4(),
+          name: item['name'] ?? 'Inconnu',
+          description: item['description'] ?? '',
+          points: item['points'] != null
+              ? int.tryParse(item['points'].toString()) ?? 1
+              : 1,
+        );
+      }).toList();
+
+      return apiItems;
+    } catch (e) {
+      if (e is FormatException) {
+        debugPrint(
+            'Erreur de format JSON lors de la récupération des aliments depuis l\'API: $e');
+      } else if (e is http.ClientException) {
+        debugPrint(
+            'Erreur de connexion lors de la récupération des aliments depuis l\'API: $e');
+      } else {
+        debugPrint(
+            'Erreur lors de la récupération des aliments depuis l\'API: $e');
+      }
+      return null;
+    }
+  }
 }
