@@ -319,7 +319,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'FoodGuess v0.5.0',
+                  'FoodGuess v0.6.0',
                   textAlign: TextAlign.center,
                   style: Theme.of(
                     context,
