@@ -764,17 +764,31 @@ class DataExportImportService {
 
   exportBetItemsAsText({required String exportType}) {}
 
-  /// Importe des aliments depuis l'API
+  /// Importe des aliments depuis l'API externe
   Future<bool> importBetItemsFromApi() async {
     try {
+      debugPrint(
+          'Début de l\'importation des aliments depuis l\'API externe...');
+
       final List<BetItem>? apiItems = await _fetchBetItemsFromApi();
 
-      if (apiItems == null || apiItems.isEmpty) {
+      if (apiItems == null) {
+        debugPrint(
+            'Échec de la récupération des données depuis l\'API externe');
         return false;
       }
 
+      if (apiItems.isEmpty) {
+        debugPrint('L\'API externe n\'a retourné aucun élément');
+        return false;
+      }
+
+      debugPrint('${apiItems.length} éléments récupérés depuis l\'API externe');
+
       // Fusionner avec les données existantes
       final existingItems = await _betItemStorage.loadBetItems();
+      debugPrint(
+          '${existingItems.length} éléments existants dans la base locale');
 
       // Trouver des éléments avec le même nom
       final existingNames =
@@ -784,7 +798,8 @@ class DataExportImportService {
           .toList();
 
       if (newItems.isEmpty) {
-        debugPrint('Aucun nouvel aliment à importer depuis l\'API');
+        debugPrint(
+            'Aucun nouvel aliment à importer depuis l\'API externe (tous déjà présents)');
         return false;
       }
 
@@ -792,21 +807,23 @@ class DataExportImportService {
       existingItems.addAll(newItems);
       await _betItemStorage.saveBetItems(existingItems);
 
-      debugPrint('${newItems.length} aliments importés depuis l\'API');
+      debugPrint(
+          'Succès: ${newItems.length} aliments importés depuis l\'API externe');
       return true;
     } catch (e) {
       debugPrint(
-          'Erreur lors de l\'importation des aliments depuis l\'API: $e');
+          'Erreur lors de l\'importation des aliments depuis l\'API externe: $e');
       return false;
     }
   }
 
-  /// Prévisualise les aliments disponibles depuis l'API
+  /// Prévisualise les aliments disponibles depuis l'API externe
   Future<List<BetItem>?> previewBetItemsFromApi() async {
     try {
       final List<BetItem>? apiItems = await _fetchBetItemsFromApi();
 
       if (apiItems == null || apiItems.isEmpty) {
+        debugPrint('Aucun élément retourné par l\'API');
         return null;
       }
 
@@ -815,16 +832,24 @@ class DataExportImportService {
       final existingNames =
           existingItems.map((item) => item.name.toLowerCase()).toSet();
 
+      // Créer une nouvelle liste pour éviter de modifier les objets originaux de la map
+      List<BetItem> previewItems = [];
+
       for (var item in apiItems) {
         if (existingNames.contains(item.name.toLowerCase())) {
-          item = item.copyWith(
+          // Créer une nouvelle instance avec la description mise à jour
+          previewItems.add(item.copyWith(
               description: item.description.isEmpty
                   ? '[Déjà présent dans votre liste]'
-                  : '${item.description} [Déjà présent dans votre liste]');
+                  : '${item.description} [Déjà présent dans votre liste]'));
+        } else {
+          previewItems.add(item);
         }
       }
 
-      return apiItems;
+      debugPrint(
+          'Prévisualisation: ${previewItems.length} aliments disponibles');
+      return previewItems;
     } catch (e) {
       debugPrint(
           'Erreur lors de la prévisualisation des aliments depuis l\'API: $e');
@@ -832,7 +857,7 @@ class DataExportImportService {
     }
   }
 
-  /// Récupère les aliments depuis l'API
+  /// Récupère les aliments depuis l'API externe
   Future<List<BetItem>?> _fetchBetItemsFromApi() async {
     try {
       final client = http.Client();
@@ -850,16 +875,32 @@ class DataExportImportService {
       final List<dynamic> betItems = jsonResponse['betItems'] ?? [];
 
       final List<BetItem> apiItems = betItems.map((item) {
+        // Vérifier si l'élément possède un champ isScoring
+        bool isScoring = false;
+        if (item.containsKey('isScoring')) {
+          isScoring = item['isScoring'] == true;
+        }
+
+        // Gérer le champ points (qui peut être un nombre ou une chaîne)
+        int points = 1;
+        if (item.containsKey('points')) {
+          if (item['points'] is int) {
+            points = item['points'];
+          } else if (item['points'] is String) {
+            points = int.tryParse(item['points']) ?? 1;
+          }
+        }
+
         return BetItem(
           id: item['id'] ?? const Uuid().v4(),
           name: item['name'] ?? 'Inconnu',
           description: item['description'] ?? '',
-          points: item['points'] != null
-              ? int.tryParse(item['points'].toString()) ?? 1
-              : 1,
+          isScoring: isScoring,
+          points: points,
         );
       }).toList();
 
+      debugPrint('API: ${apiItems.length} aliments récupérés');
       return apiItems;
     } catch (e) {
       if (e is FormatException) {
