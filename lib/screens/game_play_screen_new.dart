@@ -208,27 +208,24 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
               ),
             ),
             const SizedBox(height: 20),
+            Align(
+              alignment: Alignment.bottomLeft,
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Annuler'),
+              ),
+            ),
           ],
         ),
         actions: [
-          // Bouton Annuler (à gauche)
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
-          // Espacement flexible pour pousser les autres boutons à droite
-          const Spacer(),
-          // Bouton Ajouter (à droite)
           ElevatedButton(
             onPressed: () => _addNewItem(),
             child: const Text('Ajouter'),
           ),
-          // Bouton Ajouter et parier (à droite)
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              elevation: 3, // Légère ombre pour le mettre en évidence
             ),
             onPressed: () {
               final newItemId = _addNewItemAndGetId();
@@ -239,8 +236,7 @@ class _GamePlayScreenState extends State<GamePlayScreen> {
             child: const Text('Ajouter et parier'),
           ),
         ],
-        actionsAlignment:
-            MainAxisAlignment.spaceBetween, // Distribuer les boutons
+        actionsAlignment: MainAxisAlignment.end,
         actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         buttonPadding: const EdgeInsets.symmetric(horizontal: 16),
       ),

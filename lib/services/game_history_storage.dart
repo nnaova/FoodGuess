@@ -27,6 +27,27 @@ class GameHistoryStorage {
         game, existingId ?? const Uuid().v4(), GameHistoryStatus.completed);
   }
 
+  // Méthode pour sauvegarder une entrée d'historique importée
+  Future<void> saveImportedHistoryEntry(GameHistoryEntry entry) async {
+    final prefs = await SharedPreferences.getInstance();
+    final history = await loadGameHistory();
+
+    // Supprimer l'entrée existante si elle existe déjà
+    final existingEntryIndex = history.indexWhere((e) => e.id == entry.id);
+    if (existingEntryIndex != -1) {
+      history.removeAt(existingEntryIndex);
+    }
+
+    // Ajouter la nouvelle entrée
+    history.add(entry);
+
+    // Enregistrer l'historique mis à jour
+    final jsonString = jsonEncode(
+      history.map((entry) => entry.toJson()).toList(),
+    );
+    await prefs.setString(_storageKey, jsonString);
+  }
+
   // Méthode privée pour sauvegarder une partie avec un statut spécifique
   Future<String> _saveGame(
       Game game, String id, GameHistoryStatus status) async {

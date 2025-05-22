@@ -98,7 +98,7 @@ class HomeScreen extends StatelessWidget {
                         // ignore: deprecated_member_use
                         Theme.of(
                           context,
-                        // ignore: deprecated_member_use
+                          // ignore: deprecated_member_use
                         ).colorScheme.secondary.withOpacity(0.9),
                       ),
                     ],
@@ -136,9 +136,9 @@ class HomeScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
-                ),
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
               ),
             ),
           ),
@@ -215,8 +215,8 @@ class HomeScreen extends StatelessWidget {
                   subtitle: 'Comparer les joueurs',
                   icon: Icons.compare_arrows,
                   color: Colors.deepPurple,
-                  action:
-                      () => Navigator.pushNamed(context, '/player-comparison'),
+                  action: () =>
+                      Navigator.pushNamed(context, '/player-comparison'),
                 ),
               ),
               const SizedBox(width: 16),
@@ -232,6 +232,18 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Quatrième ligne pour l'importation/exportation
+          _buildPlayCard(
+            context,
+            title: 'Importer/Exporter',
+            subtitle: 'Sauvegarder ou restaurer vos données',
+            icon: Icons.import_export,
+            color: Colors.blueGrey,
+            action: () => Navigator.pushNamed(context, '/data-export-import'),
           ),
         ],
       ),
@@ -307,7 +319,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'FoodGuess v0.5.0',
+                  'FoodGuess v0.6.0',
                   textAlign: TextAlign.center,
                   style: Theme.of(
                     context,
@@ -497,10 +509,9 @@ class HomeScreen extends StatelessWidget {
     // L'animation serait implémentée avec un AnimationController en réalité
     // Ici on simule juste une légère rotation
     return Transform.rotate(
-      angle:
-          icon == Icons.apple
-              ? -0.1
-              : (icon == Icons.egg_alt_rounded ? 0.1 : 0),
+      angle: icon == Icons.apple
+          ? -0.1
+          : (icon == Icons.egg_alt_rounded ? 0.1 : 0),
       child: Icon(icon, size: size, color: color),
     );
   }
