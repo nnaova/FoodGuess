@@ -106,128 +106,9 @@ jobs:
         run: |
           flutter --version
           dart --version
-          echo "Vérification de la configuration du projet..."
-
-      - name: Configure Android NDK version
-        run: |
-          echo "Verification de la configuration NDK actuelle..."
-          cat android/app/build.gradle.kts
-          
-          # S'assurer que la version NDK est correctement configurée et bien positionnée
-          if ! grep -q "ndkVersion = \"27.0.12077973\"" android/app/build.gradle.kts; then
-            echo "Mise à jour de la version NDK dans build.gradle.kts"
-            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = flutter.compileSdkVersion\n    ndkVersion = "27.0.12077973"  \/\/ Mise à jour de la version NDK/' android/app/build.gradle.kts
-          elif ! grep -q "ndkVersion.*compileSdk" android/app/build.gradle.kts; then
-            # La version existe mais pourrait être mal positionnée dans la section android{}
-            echo "Reconfiguration de la position de ndkVersion dans build.gradle.kts..."
-            sed -i '/^android {/,/^}/ {
-              s/ndkVersion = "27.0.12077973".*//
-              /compileSdk = flutter.compileSdkVersion/ a\    ndkVersion = "27.0.12077973"  // Mise à jour de la version NDK
-            }' android/app/build.gradle.kts
-          fi
-          
-          echo "Configuration NDK après modification:"
-          cat android/app/build.gradle.kts
-
-      # Modification temporaire du pubspec.yaml pour la compatibilité
-      - name: Ajuster les dépendances pour la compatibilité
-        run: |
-          # Sauvegarder le pubspec.yaml original
-          cp pubspec.yaml pubspec.yaml.bak
-
-          # Ajuster les versions des dépendances pour être compatibles avec la version de Flutter utilisée
-          sed -i 's/flutter_lints: \^5.0.0/flutter_lints: \^2.0.0/' pubspec.yaml
-          sed -i 's/cupertino_icons: \^1.0.8/cupertino_icons: \^1.0.2/' pubspec.yaml
-          sed -i 's/uuid: \^4.4.1/uuid: \^3.0.7/' pubspec.yaml
-          sed -i 's/provider: \^6.1.2/provider: \^6.0.5/' pubspec.yaml
-          sed -i 's/flutter_launcher_icons: \^0.14.0/flutter_launcher_icons: \^0.13.1/' pubspec.yaml
-
-          # Modifier l'environnement SDK pour être compatible avec Flutter 3.19.0
-          sed -i "s/sdk: '>=2.19.0 <4.0.0'/sdk: '>=3.2.0 <4.0.0'/" pubspec.yaml
-
-          # Afficher le contenu modifié
-          echo "Contenu du pubspec.yaml modifié:"
-          cat pubspec.yaml
-
-      - name: Fix ColorScheme in main.dart
-        run: |
-          echo "Correction du ColorScheme dans main.dart pour ajouter les paramètres requis..."
-          # Vérifier si les paramètres background et onBackground sont déjà présents
-          if ! grep -q "background:" lib/main.dart || ! grep -q "onBackground:" lib/main.dart; then
-            # Sauvegarder le fichier original
-            cp lib/main.dart lib/main.dart.bak
-            
-            # Ajouter les paramètres manquants au ColorScheme
-            sed -i '/surface: AppColors.beigeLight,/a\\          background: AppColors.beigeLight,\n          onBackground: Colors.black87,' lib/main.dart
-            
-            echo "ColorScheme mis à jour avec les paramètres requis."
-            grep -A 15 "colorScheme:" lib/main.dart
-          else
-            echo "ColorScheme semble déjà contenir les paramètres requis."
-          fi
 
       - name: Install dependencies
         run: flutter pub get
-
-      - name: Fix Android project structure
-        run: |
-          echo "Mise à jour de la structure du projet Android pour la compatibilité"
-
-          # Sauvegarde du code et des ressources existants
-          echo "Sauvegarde des fichiers importants..."
-          mkdir -p /tmp/backup
-          cp -r lib /tmp/backup/
-          cp -r assets /tmp/backup/
-          cp pubspec.yaml /tmp/backup/
-
-          # Créer un nouveau projet temporaire avec la structure correcte
-          echo "Création d'un nouveau projet Flutter avec la structure à jour..."
-          cd ..
-          flutter create --project-name food_guess --org com.example.foodguess temporary_project
-
-          # Restaurer les fichiers de l'ancien projet dans le nouveau
-          echo "Restauration du code et des ressources dans le nouveau projet..."
-          rm -rf temporary_project/lib
-          cp -r /tmp/backup/lib temporary_project/
-          cp -r /tmp/backup/assets temporary_project/
-          cp /tmp/backup/pubspec.yaml temporary_project/
-
-          # Remplacer l'ancien projet par le nouveau
-          echo "Remplacement de l'ancien projet par le nouveau..."
-          cp -r temporary_project/android/* food_guess/android/
-
-          # Revenir au dossier du projet
-          cd food_guess
-
-          echo "Structure du projet Android mise à jour"
-          ls -la android/
-
-      - name: Update Android configuration
-        run: |
-          echo "Mise à jour de la configuration Android"
-
-          # Assurer la compatibilité des fichiers de configuration
-          echo "android.useAndroidX=true" >> android/gradle.properties
-          echo "android.enableJetifier=true" >> android/gradle.properties
-
-          # Vérifier que le fichier AndroidManifest.xml existe et contient l'embedding v2
-          if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
-            echo "AndroidManifest.xml trouvé, vérification de la configuration d'embedding..."
-            
-            # Assurer que le fichier contient la métadonnée flutterEmbedding
-            if ! grep -q "flutterEmbedding" android/app/src/main/AndroidManifest.xml; then
-              echo "Ajout de la métadonnée flutterEmbedding..."
-              sed -i '/<\/application>/i \        <meta-data android:name="flutterEmbedding" android:value="2" \/>' android/app/src/main/AndroidManifest.xml
-            fi
-          else
-            echo "ERREUR: AndroidManifest.xml non trouvé!"
-          fi
-
-          # Afficher la structure mise à jour
-          echo "Affichage du contenu de AndroidManifest.xml:"
-          cat android/app/src/main/AndroidManifest.xml
-
-          echo "Configuration Android mise à jour"
 
       - name: Build release for Android
         run: flutter build apk --release
@@ -311,34 +192,6 @@ jobs:
         run: |
           flutter --version
           dart --version
-
-      - name: Ajuster les dépendances pour la compatibilité
-        run: |
-          # Sauvegarder le pubspec.yaml original
-          cp pubspec.yaml pubspec.yaml.bak
-
-          # Méthode compatible avec macOS pour modifier pubspec.yaml
-          echo "Modification des dépendances pour la compatibilité avec Flutter 3.32.0..."
-
-          # Utiliser awk qui est plus compatible entre les systèmes
-          cat pubspec.yaml | awk '
-            /^  flutter_lints:/ { print "  flutter_lints: ^2.0.0"; next }
-            /^  cupertino_icons:/ { print "  cupertino_icons: ^1.0.2"; next }
-            /^  uuid:/ { print "  uuid: ^3.0.7"; next }
-            /^  provider:/ { print "  provider: ^6.0.5"; next }
-            /^  flutter_launcher_icons:/ { print "  flutter_launcher_icons: ^0.13.1"; next }
-            { print }
-          ' > pubspec.yaml.new
-
-          if [ -f "pubspec.yaml.new" ]; then
-            mv pubspec.yaml.new pubspec.yaml
-            echo "Dépendances mises à jour avec succès."
-            echo "Contenu du pubspec.yaml mis à jour:"
-            cat pubspec.yaml
-          else
-            echo "ERREUR: La modification du pubspec.yaml a échoué."
-            exit 1
-          fi
 
       - name: Install dependencies
         run: flutter pub get
@@ -452,7 +305,7 @@ jobs:
 
             ## Informations techniques
             - Date de construction: ${{ github.event.repository.updated_at }}
-            - Flutter: 3.19.0 (stable)
+            - Flutter: 3.32.0 (stable)
             - Version: ${{ needs.check_version.outputs.version }}
           files: |
             release-assets/foodguess-${{ needs.check_version.outputs.version }}.apk
