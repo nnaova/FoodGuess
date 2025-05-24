@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -860,13 +861,23 @@ class DataExportImportService {
   /// Récupère les aliments depuis l'API externe
   Future<List<BetItem>?> _fetchBetItemsFromApi() async {
     try {
+      debugPrint(
+          'Tentative de connexion à l\'API: https://food-guess-api.vercel.app/api/foods');
+
       final client = http.Client();
       final response = await client.get(
         Uri.parse('https://food-guess-api.vercel.app/api/foods'),
-      );
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      debugPrint('Réponse reçue - Code: ${response.statusCode}');
 
       if (response.statusCode != 200) {
-        debugPrint('Erreur API: ${response.statusCode} ${response.body}');
+        debugPrint(
+            'Erreur API: ${response.statusCode} - Corps: ${response.body}');
         return null;
       }
 
@@ -900,7 +911,7 @@ class DataExportImportService {
         );
       }).toList();
 
-      debugPrint('API: ${apiItems.length} aliments récupérés');
+      debugPrint('API: ${apiItems.length} aliments récupérés correctement');
       return apiItems;
     } catch (e) {
       if (e is FormatException) {
@@ -909,6 +920,12 @@ class DataExportImportService {
       } else if (e is http.ClientException) {
         debugPrint(
             'Erreur de connexion lors de la récupération des aliments depuis l\'API: $e');
+      } else if (e is SocketException) {
+        debugPrint(
+            'Erreur de socket lors de la connexion à l\'API (vérifiez votre connexion Internet): $e');
+      } else if (e is TimeoutException) {
+        debugPrint(
+            'Délai d\'attente dépassé lors de la connexion à l\'API: $e');
       } else {
         debugPrint(
             'Erreur lors de la récupération des aliments depuis l\'API: $e');
