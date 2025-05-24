@@ -100,7 +100,7 @@ class _MyAppState extends State<MyApp> {
           titleSmall: TextStyle(fontWeight: FontWeight.w600),
         ),
         // Éléments UI très arrondis pour l'aspect ludique
-        cardTheme: const CardTheme(
+        cardTheme: const CardThemeData(
           elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(24)),
